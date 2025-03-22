@@ -23,9 +23,12 @@
 
 int main(int argc, char** argv)
 {
+	setlocale(LC_ALL, "ru");
 	Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
 	//postgres.Test();
 
 	Crowler crowler;
+	crowler.SimpleRequest();
+
 	return 0;
 }

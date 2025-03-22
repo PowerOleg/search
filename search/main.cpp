@@ -1,5 +1,5 @@
-#include <iostream>
 #include "crowler.h"
+#include "postgres_manager.h"
 /* LAYOUT
 	1) init
 	{
@@ -22,8 +22,9 @@
 
 int main(int argc, char** argv)
 {
-	Crowler crowler;
-	
+	Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
+	postgres.Test();
 
+	Crowler crowler;
 	return 0;
 }

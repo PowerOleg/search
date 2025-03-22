@@ -4,8 +4,9 @@
 	1) init
 	{
 		1 подключаемся к sql
-		2 инициируем libpq
-		3 инициируем xml
+		2 boost httpclient
+		3 boost server
+		4 xml?
 	}
 	2) запрашиваем одно слово для поиска (в дальнейшем поиск 4 слов)
 	3) вносим стартовую страницу в queue
@@ -23,7 +24,7 @@
 int main(int argc, char** argv)
 {
 	Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
-	postgres.Test();
+	//postgres.Test();
 
 	Crowler crowler;
 	return 0;

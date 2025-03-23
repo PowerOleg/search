@@ -1,34 +1,65 @@
+п»ї#include "file_manager.h"
 #include "crowler.h"
 #include "postgres_manager.h"
 /* LAYOUT
 	1) init
 	{
-		1 подключаемся к sql
+		1 РїРѕРґРєР»СЋС‡Р°РµРјСЃСЏ Рє sql
 		2 boost httpclient
 		3 boost server
 		4 xml?
 	}
-	2) запрашиваем одно слово для поиска (в дальнейшем поиск 4 слов)
-	3) вносим стартовую страницу в queue
-	4) запускаем thread_pool тасков
-	 таска делает
+	2) Р·Р°РїСЂР°С€РёРІР°РµРј РѕРґРЅРѕ СЃР»РѕРІРѕ РґР»СЏ РїРѕРёСЃРєР° (РІ РґР°Р»СЊРЅРµР№С€РµРј РїРѕРёСЃРє 4 СЃР»РѕРІ)
+	3) РІРЅРѕСЃРёРј СЃС‚Р°СЂС‚РѕРІСѓСЋ СЃС‚СЂР°РЅРёС†Сѓ РІ queue
+	4) Р·Р°РїСѓСЃРєР°РµРј thread_pool С‚Р°СЃРєРѕРІ
+	 С‚Р°СЃРєР° РґРµР»Р°РµС‚
 	 {
-		1 индексируем сайт - это заносим данные в sql
-		2 ищем ссылки и вносим в queue
+		1 РёРЅРґРµРєСЃРёСЂСѓРµРј СЃР°Р№С‚ - СЌС‚Рѕ Р·Р°РЅРѕСЃРёРј РґР°РЅРЅС‹Рµ РІ sql
+		2 РёС‰РµРј СЃСЃС‹Р»РєРё Рё РІРЅРѕСЃРёРј РІ queue
 	 }
 
-	thread_pool обрабатывает внесенные таски while queue != 0
-	5) вывод результата. статическая страница с первыми 10 самыми релевантными ссылоками на веб-страницы
+	thread_pool РѕР±СЂР°Р±Р°С‚С‹РІР°РµС‚ РІРЅРµСЃРµРЅРЅС‹Рµ С‚Р°СЃРєРё while queue != 0
+	5) РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚Р°. СЃС‚Р°С‚РёС‡РµСЃРєР°СЏ СЃС‚СЂР°РЅРёС†Р° СЃ РїРµСЂРІС‹РјРё 10 СЃР°РјС‹РјРё СЂРµР»РµРІР°РЅС‚РЅС‹РјРё СЃСЃС‹Р»РѕРєР°РјРё РЅР° РІРµР±-СЃС‚СЂР°РЅРёС†С‹
 	*/
+
+struct Config
+{
+	std::string sqlhost;//С…РѕСЃС‚, РЅР° РєРѕС‚РѕСЂРѕРј Р·Р°РїСѓС‰РµРЅР° Р±Р°Р·Р° РґР°РЅРЅС‹С…;
+	std::string sqlport;//РїРѕСЂС‚, РЅР° РєРѕС‚РѕСЂРѕРј Р·Р°РїСѓС‰РµРЅР° Р±Р°Р·Р° РґР°РЅРЅС‹С…;
+	std::string dbname;//РЅР°Р·РІР°РЅРёРµ Р±Р°Р·С‹ РґР°РЅРЅС‹С…;
+	std::string username;//РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…;
+	std::string password;//РїР°СЂРѕР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…;
+	std::string url;//СЃС‚Р°СЂС‚РѕРІР°СЏ СЃС‚СЂР°РЅРёС†Р° РґР»СЏ РїСЂРѕРіСЂР°РјРјС‹ В«РџР°СѓРєВ»;
+	std::string crowler_depth;//РіР»СѓР±РёРЅР° СЂРµРєСѓСЂСЃРёРё РґР»СЏ РїСЂРѕРіСЂР°РјРјС‹ В«РџР°СѓРєВ»;
+	std::string http_port;//РїРѕСЂС‚ РґР»СЏ Р·Р°РїСѓСЃРєР° РїСЂРѕРіСЂР°РјРјС‹ - РїРѕРёСЃРєРѕРІРёРєР°.
+};
 
 int main(int argc, char** argv)
 {
 	setlocale(LC_ALL, "ru");
+	Config config;
+	File_manager file_manager("config.ini");
+	file_manager.FillConfig(
+		&config.sqlhost,
+		&config.sqlport,
+		&config.dbname,
+		&config.username,
+		&config.password,
+		&config.url,
+		&config.crowler_depth,
+		&config.http_port);
+
+
 	Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
 	//postgres.Test();
 
-	Crowler crowler;
-	crowler.SimpleRequest();
+
+	std::string host = "httpbin.org";
+	std::string target = "/get";
+	Crowler crowler(host, target);
+	
+
+	crowler.HttpRequest();
 
 	return 0;
 }

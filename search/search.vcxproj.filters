@@ -27,6 +27,9 @@
     <ClCompile Include="postgres_manager.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="file_manager.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crowler.h">
@@ -41,8 +44,11 @@
     <ClInclude Include="common.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="file_manager.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Config.ini" />
+    <None Include="config.ini" />
   </ItemGroup>
 </Project>

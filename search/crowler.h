@@ -17,15 +17,15 @@ using tcp = net::ip::tcp;           // from <boost/asio/ip/tcp.hpp>
 class Crowler
 {
 public:
-	Crowler();
-    int SimpleRequest()
+	Crowler(const std::string host_, const std::string target_);
+    int HttpRequest()
     {
         try
         {
         //const std::string host = "api.openweathermap.org";
         //const std::string target = "/data/2.5/weather?q=Moscow,ru,pt&APPID=cdecb72a7903eb3bb1964c39615f1764";//" / echo ? input = test";
-        const std::string host = "httpbin.org";// /search/?lr=50&text=USD+ЦБ&wiz=finance";
-        const std::string target = "/get";
+        //const std::string host = "httpbin.org";
+        //const std::string target = "/get";
     
         // I/O контекст, необходимый для всех I/O операций
         boost::asio::io_context ioc;
@@ -130,10 +130,9 @@ public:
 	}*/
 
 private:
-	std::string url = "http://api.openweathermap.org/data/2.5/weather?q=Moscow,ru,pt&APPID=cdecb72a7903eb3bb1964c39615f1764";
-	const std::string host2 = "127.0.0.1";
-	const std::string port2 = "80";
-	const std::string target2 = "_blank";
-	const int version2 = 1;
+	const std::string host;
+    const std::string target;
+	const std::string port;
+	const int version = 11;
 };
 

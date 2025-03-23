@@ -132,6 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="crowler.cpp" />
+    <ClCompile Include="file_manager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="postgres_manager.cpp" />
     <ClCompile Include="search_engine.cpp" />
@@ -139,11 +140,12 @@
   <ItemGroup>
     <ClInclude Include="common.h" />
     <ClInclude Include="crowler.h" />
+    <ClInclude Include="file_manager.h" />
     <ClInclude Include="postgres_manager.h" />
     <ClInclude Include="search_engine.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Config.ini" />
+    <None Include="config.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

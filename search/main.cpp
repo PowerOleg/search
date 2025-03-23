@@ -34,6 +34,11 @@ struct Config
 	std::string http_port;//порт для запуска программы - поисковика.
 };
 
+void PrintConsole(std::string text)
+{
+	std::cout << text << std::endl;
+}
+
 int main(int argc, char** argv)
 {
 	setlocale(LC_ALL, "ru");
@@ -49,17 +54,16 @@ int main(int argc, char** argv)
 		&config.crowler_depth,
 		&config.http_port);
 
-
+	PrintConsole(config.sqlhost);
 	Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
 	//postgres.Test();
 
 
 	std::string host = "httpbin.org";
 	std::string target = "/get";
+	//crowler.Mapping(config.url);
 	Crowler crowler(host, target);
-	
-
-	crowler.HttpRequest();
+	//crowler.HttpRequest();
 
 	return 0;
 }

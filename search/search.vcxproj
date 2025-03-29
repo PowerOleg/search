@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ExecutablePath>C:\cpp\installopenssl\dllx64Release\bin;$(ExecutablePath)</ExecutablePath>
+    <ExecutablePath>C:\cpp\eleventh\vcpkg\installed\x64-windows\bin;C:\cpp\installopenssl\dllx64Release\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -122,15 +122,15 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\cpp\installopenssl\dllx64Release\include;C:\cpp\eleventh\gumbo-parser\src;C:\cpp\boost_1_87Bin;C:\cpp\libpqxx-7.9.2\libpqxx-7.9.2\out\install\x64-Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\cpp\installopenssl\dllx64Release\include;C:\cpp\eleventh\vcpkg\installed\x64-windows\include;C:\cpp\eleventh\gumbo-parser\src;C:\cpp\boost_1_87Bin;C:\cpp\libpqxx-7.9.2\libpqxx-7.9.2\out\install\x64-Release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libssl.lib;libcrypto.lib;libpq.lib;pqxx.lib;ws2_32.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\cpp\installopenssl\dllx64Release\lib;C:\Program Files\PostgreSQL\16\lib;C:\cpp\libpqxx-7.9.2\libpqxx-7.9.2\out\install\x64-Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gumbo.lib;libssl.lib;libcrypto.lib;libpq.lib;pqxx.lib;ws2_32.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\cpp\eleventh\vcpkg\installed\x64-windows\lib;C:\cpp\installopenssl\dllx64Release\lib;C:\Program Files\PostgreSQL\16\lib;C:\cpp\libpqxx-7.9.2\libpqxx-7.9.2\out\install\x64-Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

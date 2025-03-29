@@ -22,7 +22,7 @@ void PrintConsole(std::string text)
 	std::cout << text << std::endl;
 }
 
-int main(int argc, char** argv)
+int main2(int argc, char** argv)
 {
 	setlocale(LC_ALL, "ru");
 	Config config;
@@ -57,57 +57,12 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-// протестировано в MSVS2017
-//int main2()
-//{
-//    system("chcp 1251");
-//
-//    boost::asio::io_context ioc;
-//    Webloader ldr{ ioc };
-//
-//    std::vector<std::string> vUri
-//    {
-//        "https://3dnews.ru/" // начальная ссылка
-//    };
-//
-//    std::unordered_set<std::string> ustUsed{ vUri.begin(), vUri.end() }; // для отработанных ссылок
-//
-//    std::vector<std::vector<std::string>> vres; // найденные ссылки
-//
-//    int dpth = 2; // глубина обхода
-//    while (dpth--)
-//    {
-//        vres.clear();
-//        vres.reserve(vUri.size()); // чтобы не переаллоцировался
-//
-//        // вектор vUri обрабатывается пулом из 4 потоков
-//        boost::asio::thread_pool tpool{ 4 };
-//        for (auto const& sUri : vUri)
-//        {
-//            vres.emplace_back();
-//            boost::asio::post(tpool, std::bind(&Loader::load, &ldr, std::cref(sUri), std::ref(vres.back())));
-//        }
-//        tpool.join();
-//
-//        // вывод результата
-//        removeDuplicatesFragments(vres, ustUsed);
-//        std::cout << "\n*********************************** Список из " << vUri.size() << " просмотренных страниц: ****************************************\n\n";
-//        for (int i = 0; i < vres.size(); ++i)
-//        {
-//            std::cout << "Ссылок: " << std::setw(5) << std::left << vres.at(i).size() << " для страницы: " << vUri.at(i) << "\n\n";
-//            for (auto const& str : vres.at(i))
-//            {
-//                //std::cout << str << std::endl; // вывод найденных ссылок
-//            }
-//        }
-//
-//        // перед заходом на следующую итерацию перекидываем все найденные ссылки из vres в vUri 
-//        absLinks(vUri, vres);
-//        vUri.clear();
-//        for (auto const& vLnk : vres)
-//        {
-//            vUri.insert(vUri.end(), vLnk.begin(), vLnk.end());
-//        }
-//    }
-//
-//}
+
+int main()
+{
+    system("chcp 1251");
+	boost::asio::io_context ioc;
+	Webloader ldr{ ioc };
+	ldr.Start();
+
+}

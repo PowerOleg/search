@@ -1,6 +1,7 @@
 ﻿#include "file_manager.h"
-#include "crowler.h"
+#include "crawler.h"
 #include "postgres_manager.h"
+
 
 struct Config
 {
@@ -41,8 +42,8 @@ int main(int argc, char** argv)
 	std::string host = "httpbin.org";
 	std::string target = "/get";
 	//crowler.Mapping(config.url);
-	Crowler crowler(host, target);
-	//crowler.HttpRequest();
+	Crawler crawler(host, target);
+	//crawler.HttpRequest();
 
 	return 0;
 }

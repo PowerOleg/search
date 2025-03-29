@@ -1,9 +1,9 @@
-#include "crowler.h"
+#include "crawler.h"
 
-Crowler::Crowler(const std::string host_, const std::string target_) : host{ host_ }, target{target_}
+Crawler::Crawler(const std::string host_, const std::string target_) : host{ host_ }, target{target_}
 {}
 
-int Crowler::HttpRequest()
+int Crawler::HttpRequest()
 {
     try
     {

@@ -13,10 +13,10 @@ namespace http = beast::http;       // from <boost/beast/http.hpp>
 namespace net = boost::asio;        // from <boost/asio.hpp>
 using tcp = net::ip::tcp;           // from <boost/asio/ip/tcp.hpp>
 
-class Crowler
+class Crawler
 {
 public:
-	Crowler(const std::string host_, const std::string target_);
+	Crawler(const std::string host_, const std::string target_);
 	int HttpRequest();
 
 private:

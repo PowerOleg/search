@@ -18,7 +18,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="crawler.cpp">
+    <ClCompile Include="webpage.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="postgres_manager.cpp">
@@ -32,7 +32,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crawler.h">
+    <ClInclude Include="webpage.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="postgres_manager.h">

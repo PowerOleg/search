@@ -1,9 +1,49 @@
-﻿
-//#include "crawler.h"
-//#include "postgres_manager.h"
-#include "webloader.h"
-#include "file_manager.h"
+﻿/*
+#include <unordered_set>
+#include <vector>
+#include <thread>
+#include <mutex>
+#include <functional>
+#include <boost/beast/core.hpp>
+#include <boost/asio/thread_pool.hpp>
+*/
+#include "C:/cpp/boost_1_87Bin/libs/beast/example/common/root_certificates.hpp" //прописать свой путь
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/error.hpp>
+#include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <cstdlib>
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <regex>
+#include <vector>
+#include <queue>
+#include <unordered_set>
+#include <thread>
+#include <mutex>
+#include <functional>
+#include <iomanip>
 
+/*#include <boost/asio/ssl/error.hpp>
+#include <boost/asio/ssl/stream.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <thread>
+#include <vector>*/
+
+#include <string>
+
+
+//#include "webloader.h"
+#include "webpage.h"
+//#include "postgres_manager.h"
+//#include "indexer.h"
+#include "file_manager.h"
 
 struct Config
 {
@@ -22,9 +62,9 @@ void PrintConsole(std::string text)
 	std::cout << text << std::endl;
 }
 
-int main2(int argc, char** argv)
+int main(int argc, char** argv)
 {
-	setlocale(LC_ALL, "ru");
+	system("chcp 1251");//setlocale(LC_ALL, "ru");
 	Config config;
 	File_manager file_manager("config.ini");
 	file_manager.FillConfig(
@@ -38,31 +78,41 @@ int main2(int argc, char** argv)
 		&config.http_port);
 
 
-	//std::string host = "httpbin.org";
-	//std::string target = "/get";
-	
-	//std::string host = "github.com";
-	//std::string target = "/PowerOleg?tab=repositories";
-	//https://mail.ru/
-	std::string host = "mail.ru";
-	std::string target = "/";
-	 
-	//crowler.Mapping(config.url);
-	//Crawler crawler(host, target);
-	//crawler.HttpWebSocketRequest();
+	std::vector<std::string> vUri{ "https://mail.ru/" };//начальная ссылка
+	std::unordered_set<std::string> ustUsed{ vUri.begin(), vUri.end() }; // для отработанных ссылок
+	std::vector<Webpage*> pages; //найденные ссылки
+	std::vector<std::vector<std::string>> all_links;
+	std::vector<std::string> links;
+	size_t thread_quantity = 4;
+	boost::asio::thread_pool tpool{ 4 };
+	for (const auto& sUri : vUri)
+	{
+		boost::asio::io_context ioc;
+		Webpage page{ ioc, sUri };
+		pages.push_back(&page);
+		page.LoadPage(std::cref(sUri), std::ref(all_links.back()));
+
+
+
+
+		//auto page_Load = [&page, &sUri, &links] {return page->Load(std::cref(sUri), links); };
+		/*
+		//vres.emplace_back();
+		boost::asio::post(tpool, page_Load);//std::bind(page.Load(), std::cref(sUri), std::ref(links.back())));//запускаем поток//std::bind(&Webpage::Load, page, std::cref(sUri), std::ref(links.back()))
+		std::string page_text = page.getPagePlainText();
+		PrintConsole(page_text);
+		//Indexer page_indexer(page_text);
+		//page_indexer.PutInPostgres();
+		*/
+	}
+	tpool.join();// main thread ждет выполнения boost::asio::post(), а можно было просто boost::asio::dispatch()
+
 
 
 	//Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
 	//postgres.Test();
+
+
+
 	return 0;
-}
-
-
-int main()
-{
-    system("chcp 1251");
-	boost::asio::io_context ioc;
-	Webloader ldr{ ioc };
-	ldr.Start();
-
-}
+};

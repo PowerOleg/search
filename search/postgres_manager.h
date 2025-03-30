@@ -2,7 +2,7 @@
 #include <pqxx/pqxx>
 //#include <Windows.h>
 #include "common.h"
-
+#include <set>
 //using namespace pqxx;
 
 class Postgres_manager
@@ -10,7 +10,7 @@ class Postgres_manager
 public:
 	Postgres_manager(std::string host, std::string port, std::string dbname, std::string username, std::string password);
 	
-	void Test()
+	void Test(std::set<std::string> words)
 	{
 		try
 		{

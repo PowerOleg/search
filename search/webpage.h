@@ -43,6 +43,8 @@ public:
 	void LoadPage();
 	std::string getPagePlainText() { return page_plain_text; };
 	std::vector<std::string> getLinks() { return vLinks; };
+	void MoveWords(std::vector<std::string>&& words_) { this->words = std::move(words_); };
+	std::vector<std::string> getWords() { return words; };
 
 private:
 	std::vector<std::string> LoadHttp(const std::smatch& match);
@@ -62,5 +64,6 @@ private:
 
 	std::string page_plain_text;
 	std::vector<std::string> vLinks;
+	std::vector<std::string> words;
 };
 

@@ -54,4 +54,7 @@
   <ItemGroup>
     <None Include="config.ini" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="test.txt" />
+  </ItemGroup>
 </Project>

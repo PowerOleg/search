@@ -13,22 +13,16 @@
 #include <string>
 #include <fstream>
 #include <regex>
-//#include <queue>
+#include <queue>
 #include <vector>
 #include <thread>
 #include <mutex>
 #include <functional>
 #include <iomanip>
-//#include <unordered_set>
+#include <unordered_set>
+//#include <boost/bind.hpp>
 #include "gumbo.h"
-/*#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/websocket.hpp>
-#include <cstdlib>
-#include "common.h"*/
+
 
 namespace beast = boost::beast;     // from <boost/beast.hpp>
 namespace http = beast::http;       // from <boost/beast/http.hpp>
@@ -43,10 +37,10 @@ public:
 	Webpage& operator=(Webpage const&) = delete;
 
 	Webpage(boost::asio::io_context& ioc_, const std::string url_);
-	int SimpleHttpRequest();
+	//int SimpleHttpRequest();
 	//int HttpWebSocketRequest();
 
-	void LoadPage(const std::string& sUri, std::vector<std::string>& vres);
+	void LoadPage();
 	std::string getPagePlainText() { return page_plain_text; };
 	std::vector<std::string> getLinks() { return vLinks; };
 
@@ -64,7 +58,7 @@ private:
 
 	std::regex rUri{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::mutex mtx;
-	boost::asio::io_context& ioc;
+	/*static*/ boost::asio::io_context& ioc;
 
 	std::string page_plain_text;
 	std::vector<std::string> vLinks;

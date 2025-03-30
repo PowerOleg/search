@@ -28,6 +28,7 @@
 #include <mutex>
 #include <functional>
 #include <iomanip>
+#include <boost/bind.hpp>
 
 /*#include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -80,33 +81,29 @@ int main(int argc, char** argv)
 
 	std::vector<std::string> vUri{ "https://mail.ru/" };//начальная ссылка
 	std::unordered_set<std::string> ustUsed{ vUri.begin(), vUri.end() }; // для отработанных ссылок
-	std::vector<Webpage*> pages; //найденные ссылки
+	std::vector<Webpage*> pages;
 	std::vector<std::vector<std::string>> all_links;
-	std::vector<std::string> links;
+	
 	size_t thread_quantity = 4;
-	boost::asio::thread_pool tpool{ 4 };
+	std::atomic_int thread_count = 0;
+	boost::asio::thread_pool tpool{ thread_quantity };
 	for (const auto& sUri : vUri)
 	{
 		boost::asio::io_context ioc;
 		Webpage page{ ioc, sUri };
-		pages.push_back(&page);
-		page.LoadPage(std::cref(sUri), std::ref(all_links.back()));
+		pages.push_back(&page);//вызывает нарушение доступа к вектору
 
 
-
-
-		//auto page_Load = [&page, &sUri, &links] {return page->Load(std::cref(sUri), links); };
-		/*
-		//vres.emplace_back();
-		boost::asio::post(tpool, page_Load);//std::bind(page.Load(), std::cref(sUri), std::ref(links.back())));//запускаем поток//std::bind(&Webpage::Load, page, std::cref(sUri), std::ref(links.back()))
-		std::string page_text = page.getPagePlainText();
-		PrintConsole(page_text);
-		//Indexer page_indexer(page_text);
-		//page_indexer.PutInPostgres();
-		*/
+		auto page_Load = [&page] { page.LoadPage(); };//auto page_Load = [&pages, &thread_count] { pages.at(thread_count++)->LoadPage(); };
+		boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
+		printf("dispatch\n");
+		
 	}
-	tpool.join();// main thread ждет выполнения boost::asio::post(), а можно было просто boost::asio::dispatch()
+	tpool.join();
 
+	std::string page_text = pages.at(0)->getPagePlainText();
+	std::vector<std::string> page_links = pages.at(0)->getLinks();
+	PrintConsole(page_text);
 
 
 	//Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");

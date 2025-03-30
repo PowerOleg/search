@@ -1,28 +1,34 @@
 #include "webpage.h"
 
-Webpage::Webpage(boost::asio::io_context& ioc_, const std::string url_) : ioc{ioc_}, url{ url_ } {}
+Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_) : ioc{ ioc_ },  url(url_)
+{
+    //this->url = "https://mail.ru/";
+    //boost::asio::io_context ioc_;
+    //this->ioc = &ioc_;
+    
+}
 
 
 
-void Webpage::LoadPage(const std::string &sUri, std::vector<std::string> &vres)
+void Webpage::LoadPage()
 {
     std::smatch match;
-    if (std::regex_match(sUri, match, rUri))
+    if (std::regex_match(this->url, match, rUri))
     {
         if (match[1].str() == "http")
         {
-            vres = LoadHttp(match);
+            LoadHttp(match);
         }
         else
         {
-            vres = LoadHttps(match);
+            LoadHttps(match);
         }
     }
     else
     {
         {
             std::lock_guard<std::mutex> lg{ mtx };
-            std::cerr << "load() std::regex_match() failed: " + sUri << "\n\n";
+            std::cerr << "load() std::regex_match() failed: " + url << "\n\n";
         }
     }
 }
@@ -125,37 +131,37 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
     return std::vector<std::string>();
 }
 
-int Webpage::SimpleHttpRequest()
-{
-    try
-    {
-        boost::asio::io_context ioc;
-        boost::asio::ip::tcp::resolver resolver(ioc);
-        boost::asio::ip::tcp::socket socket(ioc);
-        boost::asio::connect(socket, resolver.resolve(host, port));
-        http::request<http::string_body> req(http::verb::get, target, version);
-        req.set(http::field::host, host);
-        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-        http::write(socket, req);
-
-        {
-            boost::beast::flat_buffer buffer;
-            http::response<http::dynamic_body> res;
-            http::read(socket, buffer, res);
-
-            std::cout << res << std::endl;
-        }
-        socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    return 0;
-}
+//int Webpage::SimpleHttpRequest()
+//{
+//    try
+//    {
+//        boost::asio::io_context ioc;
+//        boost::asio::ip::tcp::resolver resolver(ioc);
+//        boost::asio::ip::tcp::socket socket(ioc);
+//        boost::asio::connect(socket, resolver.resolve(host, port));
+//        http::request<http::string_body> req(http::verb::get, target, version);
+//        req.set(http::field::host, host);
+//        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+//        http::write(socket, req);
+//
+//        {
+//            boost::beast::flat_buffer buffer;
+//            http::response<http::dynamic_body> res;
+//            http::read(socket, buffer, res);
+//
+//            std::cout << res << std::endl;
+//        }
+//        socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+//
+//    }
+//    catch (const std::exception& e)
+//    {
+//        std::cerr << "Error: " << e.what() << std::endl;
+//        return EXIT_FAILURE;
+//    }
+//
+//    return 0;
+//}
 
 //int Webpage::HttpWebSocketRequest()
 //{

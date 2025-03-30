@@ -26,12 +26,12 @@ using tcp = boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 namespace http = boost::beast::http;
 
-void absLinks(std::vector<std::string> const& vUri, std::vector<std::vector<std::string>>& vres);
-void removeDuplicatesFragments(std::vector<std::vector<std::string>>& vres, std::unordered_set<std::string>& ustUsed);
+void AbsLinks(std::vector<std::string> const& vUri, std::vector<std::vector<std::string>>& vres);
+void RemoveDuplicatesFragments(std::vector<std::vector<std::string>>& vres, std::unordered_set<std::string>& ustUsed);
 
 
 // копирует найденные ссылки в ustUsed и удаляет дубликаты и ссылки на фрагменты
-void removeDuplicatesFragments(std::vector<std::vector<std::string>>& vres, std::unordered_set<std::string>& ustUsed)
+void RemoveDuplicatesFragments(std::vector<std::vector<std::string>>& vres, std::unordered_set<std::string>& ustUsed)
 {
     for (auto& vLnk : vres)
     {
@@ -47,7 +47,7 @@ void removeDuplicatesFragments(std::vector<std::vector<std::string>>& vres, std:
 }
 
 // исправляет некоторые относительные ссылки в абсолютные
-void absLinks(std::vector<std::string> const& vUri, std::vector<std::vector<std::string>>& vres)
+void AbsLinks(std::vector<std::string> const& vUri, std::vector<std::vector<std::string>>& vres)
 {
     std::smatch mr;
     for (int i = 0; i < vUri.size(); ++i)
@@ -117,24 +117,24 @@ public:
             for (auto const& sUri : vUri)
             {
                 vres.emplace_back();
-                boost::asio::post(tpool, std::bind(&Webloader::load, /*&ldr*/this, std::cref(sUri), std::ref(vres.back())));
+                boost::asio::post(tpool, std::bind(&Webloader::Load, /*&ldr*/this, std::cref(sUri), std::ref(vres.back())));//запускаем поток
             }
-            tpool.join();
+            tpool.join();// main thread ждет выполнения boost::asio::post(), а можно было просто boost::asio::dispatch()
 
             // вывод результата
-            removeDuplicatesFragments(vres, ustUsed);
+            RemoveDuplicatesFragments(vres, ustUsed);
             std::cout << "\n*********************************** Список из " << vUri.size() << " просмотренных страниц: ****************************************\n\n";
             for (int i = 0; i < vres.size(); ++i)
             {
                 std::cout << "Ссылок: " << std::setw(5) << std::left << vres.at(i).size() << " для страницы: " << vUri.at(i) << "\n\n";
                 for (auto const& str : vres.at(i))
                 {
-                    //std::cout << str << std::endl; // вывод найденных ссылок
+                    std::cout << str << std::endl; // вывод найденных ссылок
                 }
             }
 
             // перед заходом на следующую итерацию перекидываем все найденные ссылки из vres в vUri 
-            absLinks(vUri, vres);
+            AbsLinks(vUri, vres);
             vUri.clear();
             for (auto const& vLnk : vres)
             {
@@ -143,7 +143,7 @@ public:
         }
     }
 
-    std::vector<std::string> findLinks(std::string const& sBody)
+    std::vector<std::string> FindLinks(std::string const& sBody)
     {
         std::vector<std::string> vLinks;
 
@@ -214,18 +214,18 @@ public:
         return vLinks;
     }
 
-    void load(std::string const& sUri, std::vector<std::string>& vres)
+    void Load(const std::string& sUri, std::vector<std::string>& vres)
     {
-        std::smatch mr;
-        if (std::regex_match(sUri, mr, rUri))
+        std::smatch match;
+        if (std::regex_match(sUri, match, rUri))
         {
-            if (mr[1].str() == "http")
+            if (match[1].str() == "http")
             {
-                vres = loadHttp(mr);
+                vres = LoadHttp(match);
             }
             else
             {
-                vres = loadHttps(mr);
+                vres = LoadHttps(match);
             }
         }
         else
@@ -237,20 +237,20 @@ public:
         }
     }
 
-    std::vector<std::string> loadHttp(const std::smatch& mr)
+    std::vector<std::string> LoadHttp(const std::smatch& match)
     {
         std::vector<std::string> vLinks;
         try {
-            std::string const target = (mr[3].length() == 0 ? "/" : mr[3].str());
-            int version = 11; // или 10 для http 1.0
+            const std::string target = (match[3].length() == 0 ? "/" : match[3].str());
+            int version = 11;
 
             tcp::socket socket{ ioc };
             tcp::resolver resolver{ ioc };
-            std::string mr2 = mr[2];
-            auto const results = resolver.resolve(mr2, "80");
+            std::string match_element2 = match[2].str();
+            const auto results = resolver.resolve(match_element2, "80");
             boost::asio::connect(socket, results.begin(), results.end());
             http::request<http::string_body> req{ http::verb::get, target, version };
-            req.set(http::field::host, mr2);
+            req.set(http::field::host, match_element2);
             req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
             http::write(socket, req);
             boost::beast::flat_buffer buffer;
@@ -258,7 +258,7 @@ public:
             http::read(socket, buffer, res);
 
             std::string sBody = boost::beast::buffers_to_string(res.body().data());
-            vLinks = findLinks(sBody);
+            vLinks = FindLinks(sBody);
 
             boost::system::error_code ec;
             socket.shutdown(tcp::socket::shutdown_both, ec);
@@ -266,7 +266,7 @@ public:
                 throw boost::system::system_error{ ec };
 
         }
-        catch (std::exception const& e)
+        catch (const std::exception& e)
         {
             {
                 std::lock_guard<std::mutex> lg{ mtx };
@@ -276,13 +276,13 @@ public:
         return vLinks;
     }
 
-    std::vector<std::string> loadHttps(std::smatch const& mr)
+    std::vector<std::string> LoadHttps(std::smatch const& match)
     {
         std::vector<std::string> vLinks;
         try {
 
-            std::string const host = mr[2];
-            std::string const target = (mr[3].length() == 0 ? "/" : mr[3].str());
+            std::string const host = match[2];
+            std::string const target = (match[3].length() == 0 ? "/" : match[3].str());
             int version = 11;
 
             ssl::context ctx{ ssl::context::sslv23_client };
@@ -305,8 +305,8 @@ public:
             http::response<http::dynamic_body> res;
             http::read(stream, buffer, res);
 
-            std::string sBody = boost::beast::buffers_to_string(res.body().data());
-            vLinks = findLinks(sBody);
+            std::string page_plain_text = boost::beast::buffers_to_string(res.body().data());
+            vLinks = FindLinks(page_plain_text);
 
             boost::system::error_code ec;
             stream.shutdown(ec);

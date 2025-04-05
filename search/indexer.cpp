@@ -1,7 +1,9 @@
 #include "indexer.h"
 
-Indexer::Indexer(const std::string page_body)
+Indexer::Indexer(const std::string &page_body)
 {
+    SetConsoleCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
 	this->page_body = page_body;
 	printf("Indexing...");
     std::vector<std::string> hrefs;
@@ -20,6 +22,8 @@ Indexer::Indexer(const std::string page_body)
         qn.pop();
         if (GUMBO_NODE_ELEMENT == node->type)
         {
+            //std::chrono::milliseconds sleep_time(500);
+            //std::this_thread::sleep_for(sleep_time);
             ExtractText(node);
 
             /*GumboNode* title_text = static_cast<GumboNode*>(node->v.element.children.data[0]);
@@ -63,7 +67,7 @@ Indexer::Indexer(const std::string page_body)
 void Indexer::ExtractText(GumboNode* node) {
    // [4] (https://best-of-web.builder.io/library/google/gumbo-parser)
     if (node->type == GUMBO_NODE_TEXT) {
-        printf("Text: %s\n", node->v.text.text);// [4] (https://best-of-web.builder.io/library/google/gumbo-parser)
+        printf(/*"Text: %s\n", */node->v.text.text);// [4] (https://best-of-web.builder.io/library/google/gumbo-parser)
     }
     else if (node->type == GUMBO_NODE_ELEMENT)
     {

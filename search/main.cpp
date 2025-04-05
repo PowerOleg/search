@@ -7,6 +7,8 @@
 #include <boost/beast/core.hpp>
 #include <boost/asio/thread_pool.hpp>
 */
+
+/*
 #include "C:/cpp/boost_1_87Bin/libs/beast/example/common/root_certificates.hpp" //прописать свой путь
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -29,6 +31,11 @@
 #include <functional>
 #include <iomanip>
 #include <boost/bind.hpp>
+
+*/
+
+#include <boost/beast/core.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <string>
 #include <memory>
 
@@ -59,7 +66,8 @@ boost::asio::io_context ioc;
 
 int main(int argc, char** argv)
 {
-	//system("chcp 1251");//setlocale(LC_ALL, "ru");
+	//system("chcp 1251");
+	//setlocale(LC_ALL, "ru");
 	Config config;
 	File_manager file_manager("config.ini");
 	file_manager.FillConfig(

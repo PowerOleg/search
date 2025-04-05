@@ -30,6 +30,7 @@
 #include <iomanip>
 #include <boost/bind.hpp>
 #include <string>
+#include <memory>
 
 #include "webpage.h"
 #include "postgres_manager.h"
@@ -53,6 +54,9 @@ void PrintConsole(std::string text)
 	std::cout << text << std::endl;
 }
 
+
+boost::asio::io_context ioc;
+
 int main(int argc, char** argv)
 {
 	//system("chcp 1251");//setlocale(LC_ALL, "ru");
@@ -68,37 +72,43 @@ int main(int argc, char** argv)
 		&config.crowler_depth,
 		&config.http_port);
 
-
+	//std::vector<std::vector<std::string>> all_links;
+	//std::unordered_set<std::string> ustUsed{ vUri.begin(), vUri.end() }; //для отработанных ссылок
 	std::vector<std::string> vUri{ "https://mail.ru/" };//начальная ссылка
-	std::unordered_set<std::string> ustUsed{ vUri.begin(), vUri.end() }; // для отработанных ссылок
-	std::vector<Webpage*> pages;
-	std::vector<std::vector<std::string>> all_links;
+	std::vector<std::shared_ptr<Webpage>> pages;
 	
-	//size_t thread_quantity = 2;
-	//std::atomic_int thread_count = 0;
-	//boost::asio::thread_pool tpool{ thread_quantity };
-	//for (const auto& sUri : vUri)
-	//{
-	//	boost::asio::io_context ioc;
-	//	Webpage page{ ioc, sUri };
-	//	pages.push_back(&page);//вызывает нарушение доступа к вектору
+	size_t thread_quantity = 2;
+	boost::asio::thread_pool tpool{ thread_quantity };
+	for (const auto& sUri : vUri)
+	{
+		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, sUri);
+		pages.push_back(page);
+
+		auto page_Load = [&page] { page->LoadPage(); };
+		boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
+	}
+	tpool.join();
 
 
-	//	auto page_Load = [&page] { page.LoadPage(); };//auto page_Load = [&pages, &thread_count] { pages.at(thread_count++)->LoadPage(); };
-	//	boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
-	//	printf("dispatch\n");
-	//	
-	//}
-	//tpool.join();
+	std::string page_text = pages.at(0)->getPagePlainText();
+	PrintConsole(page_text);
 
-	boost::asio::io_context ioc;
-	Webpage page{ ioc, vUri.at(0) };
+
+
+
+
+
+
+
+
+
+	/*Webpage page{ ioc, vUri.at(0) };
 	page.LoadPage();
 	std::string page_text = page.getPagePlainText();
 
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
-	page.MoveWords(std::move(words));
+	page.MoveWords(std::move(words));*/
 
 	//Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
 	//postgres.Test(page.getWordSet());

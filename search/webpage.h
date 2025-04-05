@@ -29,6 +29,7 @@ namespace http = beast::http;       // from <boost/beast/http.hpp>
 namespace net = boost::asio;        // from <boost/asio.hpp>
 using tcp = net::ip::tcp;           // from <boost/asio/ip/tcp.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+//using namespace boost::asio;
 
 class Webpage
 {

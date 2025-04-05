@@ -5,7 +5,6 @@ Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_) : ioc{ ioc_ },
     //this->url = "https://mail.ru/";
     //boost::asio::io_context ioc_;
     //this->ioc = &ioc_;
-    
 }
 
 

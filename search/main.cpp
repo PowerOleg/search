@@ -38,11 +38,14 @@
 #include <boost/asio/thread_pool.hpp>
 #include <string>
 #include <memory>
-
+#include <clocale>
+#include <locale>
 #include "webpage.h"
 #include "postgres_manager.h"
 #include "indexer.h"
 #include "file_manager.h"
+#include <cstdlib>
+#pragma execution_character_set("utf-8")
 
 struct Config
 {
@@ -66,8 +69,17 @@ boost::asio::io_context ioc;
 
 int main(int argc, char** argv)
 {
+	//setlocale(LC_ALL, "");
 	//system("chcp 1251");
+	//std::locale::global(std::locale(""));
+	//system("chcp 1251 > nul");
+	//system("chcp utf-8 > nul");
 	//setlocale(LC_ALL, "ru");
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
+
+
+
 	Config config;
 	File_manager file_manager("config.ini");
 	file_manager.FillConfig(
@@ -109,8 +121,8 @@ int main(int argc, char** argv)
 
 
 
-
-
+	File_manager file_manager("test.txt");
+	//читаем test.txt и запихиваем в постгрес слова
 	//Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
 	//postgres.Test(page.getWordSet());
 

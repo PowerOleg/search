@@ -12,16 +12,16 @@
 #include <iostream>
 #include <algorithm>
 #include <thread>
-//#include <gumbo.h>
+#include <sstream>
+
 #include "gumbo.h"
-#pragma execution_character_set("utf-8")
 
 class Indexer
 {
 public:
 	Indexer(const std::string &page_body);
 	std::vector<std::string> getWords() { return this->words; }
-	
+	std::ofstream out;
 private:
 	void ExtractText(GumboNode* node);
 

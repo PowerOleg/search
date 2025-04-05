@@ -52,8 +52,8 @@ std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
         http::response<http::dynamic_body> res;
         http::read(socket, buffer, res);
 
-        std::string sBody = boost::beast::buffers_to_string(res.body().data());
-        vLinks = FindLinks(sBody);
+        this->page_text = boost::beast::buffers_to_string(res.body().data());
+        this->vLinks = FindLinks(page_text);
 
         boost::system::error_code ec;
         socket.shutdown(tcp::socket::shutdown_both, ec);
@@ -100,8 +100,8 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         http::response<http::dynamic_body> res;
         http::read(stream, buffer, res);
 
-        this->page_plain_text = boost::beast::buffers_to_string(res.body().data());
-        this->vLinks = FindLinks(page_plain_text);
+        this->page_text = boost::beast::buffers_to_string(res.body().data());
+        this->vLinks = FindLinks(page_text);
 
 
         boost::system::error_code ec;

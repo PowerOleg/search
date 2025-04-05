@@ -89,26 +89,19 @@ int main(int argc, char** argv)
 	}
 	tpool.join();
 
-
-	std::string page_text = pages.at(0)->getPagePlainText();
-	PrintConsole(page_text);
-
-
-
-
-
-
-
-
-
-
-	/*Webpage page{ ioc, vUri.at(0) };
-	page.LoadPage();
-	std::string page_text = page.getPagePlainText();
+	std::string page_text = pages.at(0)->getPageText();
+	std::vector<std::string> links = pages.at(0)->getLinks();
 
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
-	page.MoveWords(std::move(words));*/
+	pages.at(0)->MoveWords(std::move(words));
+
+
+
+
+
+
+
 
 	//Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
 	//postgres.Test(page.getWordSet());

@@ -73,7 +73,7 @@ bool Postgres_manager::InitTables()
 bool Postgres_manager::Write(std::string url, std::map<std::string, int> counted_words)
 {
 	bool result = false;
-	//std::vector<std::string> words_id;
+	//std::vector<std::string> words;
 	if (url.length() > 255)
 	{
 		std::cout << "Ошибка! url длиннее 255 символов";
@@ -84,30 +84,57 @@ bool Postgres_manager::Write(std::string url, std::map<std::string, int> counted
 	{
 		pqxx::work tx{ connection };
 		tx.exec_prepared("prepared_insert_document", url);//prepared statement
-		std::string document_id = "1";
-	
-
-
+		
 		for (const auto& word_and_quantity : counted_words)
 		{
 			std::string word = word_and_quantity.first;
-			std::string quantity = std::to_string(word_and_quantity.second);
-			if (word.length() > 32)
-			{
-				continue;
-			}
 			tx.exec_prepared("prepared_insert_word", word);//prepared statement
-			std::string word_id = "1";
-			tx.exec_prepared("prepared_insert_documents_words", document_id, word_id, quantity);//prepared statement
 		}
-
-
 		tx.commit();
-		result = true;
 	}
 	catch (const std::exception& e)
 	{
 		std::cout << e.what() << std::endl;
 	}
+
+
+	std::string document_id = "1";
+	/*
+	try
+	{
+		pqxx::work tx2{ connection };
+		long word_number = 1L;
+		for (const auto& word_and_quantity : counted_words)
+		{
+			std::string word = word_and_quantity.first;
+			std::string quantity = std::to_string(word_and_quantity.second);
+
+		
+			std::string word_id = std::to_string(word_number++);
+			tx2.exec_prepared("prepared_insert_documents_words", document_id, word_id, quantity);//prepared statement
+		}
+		tx2.commit();
+		result = true;
+}
+catch (const std::exception& e)
+{
+	std::cout << e.what() << std::endl;
+}*/
+
+
+
+//for debug
+/*	pqxx::work tx3{connection};
+	std::string table1 = "Documents";
+	std::string table2 = "Words";
+	std::string table3 = "Documents_words";
+
+	pqxx::work tx{ this->connection };
+	tx.exec("drop table " + table1 + " CASCADE;");
+	tx.exec("drop table " + table2 + " CASCADE;");
+	tx.exec("drop table " + table3 + " CASCADE;");
+	tx3.commit();
+	*/
+
 	return result;
 }

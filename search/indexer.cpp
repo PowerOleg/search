@@ -1,9 +1,8 @@
 #include "indexer.h"
 //#include <locale>
 
-Indexer::Indexer(const std::string& page_body) : out{ "test.txt" }
+Indexer::Indexer(const std::string& page_body)// : out{ "test.txt" }
 {
-    
 	this->page_body = page_body;
 	printf("Indexing...");
     std::vector<std::string> hrefs;
@@ -24,7 +23,7 @@ Indexer::Indexer(const std::string& page_body) : out{ "test.txt" }
         }
         
     }
-    out.close();
+    //out.close();
 }
 
 void Indexer::ExtractText(GumboNode* node) {
@@ -40,7 +39,7 @@ void Indexer::ExtractText(GumboNode* node) {
        {
            stringstream >> word;
            
-           words.emplace_back(word);
+           words1.emplace_back(word);
        }
         //printf(/*"Text: %s\n", */node->v.text.text);// [4] (https://best-of-web.builder.io/library/google/gumbo-parser)
     }
@@ -53,7 +52,7 @@ void Indexer::ExtractText(GumboNode* node) {
     }
 }
 
-std::map<std::string, int> Indexer::Count(std::vector<std::string> words)
+std::map<std::string, int> Indexer::Count(const std::vector<std::string> &words)
 {
     std::map<std::string, int> count;
     for (size_t i = 0; i < words.size(); i++)
@@ -66,6 +65,10 @@ std::map<std::string, int> Indexer::Count(std::vector<std::string> words)
         }
         else
         {
+            if (word.length() > 32)
+            {
+                continue;
+            }
             count.insert({ word , 1 });
         }
     }

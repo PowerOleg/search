@@ -20,13 +20,13 @@ class Indexer
 {
 public:
 	Indexer(const std::string &page_body);
-	std::vector<std::string> getWords() { return this->words; }
-	std::ofstream out;
-	std::map<std::string, int> Count(std::vector<std::string> words);
+	std::vector<std::string> getWords() { return this->words1; }
+	//std::ofstream out;
+	std::map<std::string, int> Count(const std::vector<std::string> &words);
 private:
 	void ExtractText(GumboNode* node);
 
 	std::string page_body;
-	std::vector<std::string> words;
+	std::vector<std::string> words1;
 };
 

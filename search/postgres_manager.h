@@ -3,6 +3,7 @@
 //#include <Windows.h>
 #include "common.h"
 #include <vector>
+#include <string>
 //using namespace pqxx;
 
 class Postgres_manager
@@ -10,6 +11,8 @@ class Postgres_manager
 public:
 	Postgres_manager(std::string host, std::string port, std::string dbname, std::string username, std::string password);
 	
+
+
 	bool Write(std::string url, std::vector<std::string> words);
 
 	void SelectTest()
@@ -30,6 +33,9 @@ public:
 	}
 
 private:
+	bool Clean();
+	bool CreateTable(std::string tablename, std::string param);
+	bool InitTables();
 	pqxx::connection connection;
 };
 

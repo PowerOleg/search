@@ -45,8 +45,7 @@
 #include "indexer.h"
 #include "file_manager.h"
 #include <cstdlib>
-#include "main.h"
-//#pragma execution_character_set("utf-8")
+#pragma execution_character_set("utf-8")
 
 struct Config
 {
@@ -75,10 +74,10 @@ int main(int argc, char** argv)
 	//std::locale::global(std::locale(""));
 	//system("chcp 1251 > nul");
 	//system("chcp utf-8 > nul");
-	setlocale(LC_ALL, "ru");
+	//setlocale(LC_ALL, "ru");
 
-	//SetConsoleCP(CP_UTF8);
-	//SetConsoleOutputCP(CP_UTF8);
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
 
 
 
@@ -128,7 +127,7 @@ int main(int argc, char** argv)
 	File_manager file_manager_test_text("test.txt");
 	std::vector<std::string> words = file_manager_test_text.SimpleRead();
 	
-	Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
+	Postgres_manager postgres("localhost", "5432", "pages", "postgres", "106");
 	postgres.Write("https://mail.ru/", words);
 
 

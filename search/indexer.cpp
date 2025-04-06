@@ -52,3 +52,22 @@ void Indexer::ExtractText(GumboNode* node) {
         }
     }
 }
+
+std::map<std::string, int> Indexer::Count(std::vector<std::string> words)
+{
+    std::map<std::string, int> count;
+    for (size_t i = 0; i < words.size(); i++)
+    {
+        std::string word = words.at(i);
+        if (count.contains(word))
+        {
+            int quantity = count.at(word);
+            count.insert({ word , ++quantity });
+        }
+        else
+        {
+            count.insert({ word , 1 });
+        }
+    }
+    return count;
+}

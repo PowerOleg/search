@@ -37,6 +37,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <string>
+#include <map>
 #include <memory>
 #include <clocale>
 #include <locale>
@@ -123,12 +124,15 @@ int main(int argc, char** argv)
 
 
 
+	
 
 	File_manager file_manager_test_text("test.txt");
 	std::vector<std::string> words = file_manager_test_text.SimpleRead();
-	
+
+	Indexer page_indexer("");//d
+	std::map<std::string, int> counted_words = page_indexer.Count(words);
 	Postgres_manager postgres("localhost", "5432", "pages", "postgres", "106");
-	postgres.Write("https://mail.ru/", words);
+	postgres.Write("https://mail.ru/", counted_words);
 
 
 

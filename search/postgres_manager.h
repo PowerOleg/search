@@ -3,6 +3,7 @@
 //#include <Windows.h>
 #include "common.h"
 #include <vector>
+#include <map>
 #include <string>
 //using namespace pqxx;
 
@@ -11,9 +12,7 @@ class Postgres_manager
 public:
 	Postgres_manager(std::string host, std::string port, std::string dbname, std::string username, std::string password);
 	
-
-
-	bool Write(std::string url, std::vector<std::string> words);
+	bool Write(std::string url, std::map<std::string, int> words);
 
 	void SelectTest()
 	{

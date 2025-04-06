@@ -1,6 +1,7 @@
 #pragma once
-//#include "common.h"
+
 #include <fstream>
+#include <vector>
 
 class File_manager
 {
@@ -17,6 +18,7 @@ public:
 		std::string* crowler_depth,
 		std::string* http_port);
 	
+		std::vector<std::string> SimpleRead();
 private:
 	const std::string filename;
 	void ReadAndSetValues(std::string& line, std::string* config_sqlhost, std::string* config_sqlport, std::string* config_dbname, std::string* config_username, std::string* config_password, std::string* config_url, std::string* config_crowler_depth, std::string* config_http_port);

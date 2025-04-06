@@ -29,6 +29,30 @@ void File_manager::FillConfig(
 	in.close();
 }
 
+std::vector<std::string> File_manager::SimpleRead()
+{
+	std::vector<std::string> result;
+
+	std::string line;
+	std::ifstream in(filename);
+	if (!in.is_open())
+	{
+		printf("file is not opened");
+		return result;
+	}
+
+	while (!(in >> line).eof())
+	{
+		result.push_back(line);
+	}
+	in >> line;
+	result.push_back(line);
+
+
+	in.close();
+	return result;
+}
+
 void File_manager::ReadAndSetValues(std::string& line, std::string* config_sqlhost, std::string* config_sqlport, std::string* config_dbname, std::string* config_username, std::string* config_password, std::string* config_url, std::string* config_crowler_depth, std::string* config_http_port)
 {
 	size_t index = line.find("=");

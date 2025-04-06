@@ -45,7 +45,8 @@
 #include "indexer.h"
 #include "file_manager.h"
 #include <cstdlib>
-#pragma execution_character_set("utf-8")
+#include "main.h"
+//#pragma execution_character_set("utf-8")
 
 struct Config
 {
@@ -74,9 +75,10 @@ int main(int argc, char** argv)
 	//std::locale::global(std::locale(""));
 	//system("chcp 1251 > nul");
 	//system("chcp utf-8 > nul");
-	//setlocale(LC_ALL, "ru");
-	SetConsoleCP(CP_UTF8);
-	SetConsoleOutputCP(CP_UTF8);
+	setlocale(LC_ALL, "ru");
+
+	//SetConsoleCP(CP_UTF8);
+	//SetConsoleOutputCP(CP_UTF8);
 
 
 
@@ -91,12 +93,14 @@ int main(int argc, char** argv)
 		&config.url,
 		&config.crowler_depth,
 		&config.http_port);
-
+	
+/*
 	//std::vector<std::vector<std::string>> all_links;
 	//std::unordered_set<std::string> ustUsed{ vUri.begin(), vUri.end() }; //для отработанных ссылок
 	std::vector<std::string> vUri{ "https://mail.ru/" };//начальная ссылка
 	std::vector<std::shared_ptr<Webpage>> pages;
 	
+	std::atomic_int pages_count = 0;
 	size_t thread_quantity = 2;
 	boost::asio::thread_pool tpool{ thread_quantity };
 	for (const auto& sUri : vUri)
@@ -115,16 +119,17 @@ int main(int argc, char** argv)
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
 	pages.at(0)->MoveWords(std::move(words));
+	*/
 
 
 
 
 
-
-	File_manager file_manager("test.txt");
-	//читаем test.txt и запихиваем в постгрес слова
-	//Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
-	//postgres.Test(page.getWordSet());
+	File_manager file_manager_test_text("test.txt");
+	std::vector<std::string> words = file_manager_test_text.SimpleRead();
+	
+	Postgres_manager postgres("localhost", "5432", "dvdrental", "postgres", "106");
+	postgres.Write("https://mail.ru/", words);
 
 
 

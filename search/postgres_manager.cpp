@@ -70,7 +70,7 @@ bool Postgres_manager::InitTables()
 	return result;
 }
 
-bool Postgres_manager::Write(std::string url, std::map<std::string, int> counted_words)
+bool Postgres_manager::Write(const std::string url, const std::map<std::string, int> &counted_words)
 {
 	bool result = false;
 	//std::vector<std::string> words;
@@ -99,7 +99,7 @@ bool Postgres_manager::Write(std::string url, std::map<std::string, int> counted
 
 
 	std::string document_id = "1";
-	/*
+	
 	try
 	{
 		pqxx::work tx2{ connection };
@@ -119,7 +119,7 @@ bool Postgres_manager::Write(std::string url, std::map<std::string, int> counted
 catch (const std::exception& e)
 {
 	std::cout << e.what() << std::endl;
-}*/
+}
 
 
 

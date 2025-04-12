@@ -39,7 +39,7 @@ void Indexer::ExtractText(GumboNode* node) {
        {
            stringstream >> word;
            
-           words1.emplace_back(word);
+           words.emplace_back(word);
        }
         //printf(/*"Text: %s\n", */node->v.text.text);// [4] (https://best-of-web.builder.io/library/google/gumbo-parser)
     }
@@ -61,11 +61,11 @@ std::map<std::string, int> Indexer::Count(const std::vector<std::string> &words)
         if (count_map.contains(word))
         {
             int quantity = count_map.at(word);
-            count_map.insert({ word , ++quantity });
+            count_map.insert_or_assign(word , ++quantity);
         }
         else
         {
-            if (word.length() > 32)
+            if (word.length() > 32 || word == "")
             {
                 continue;
             }

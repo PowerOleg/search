@@ -15,13 +15,13 @@ public:
 		std::string* username,
 		std::string* password,
 		std::string* url,
-		std::string* crowler_depth,
+		std::string* crawler_depth,
 		std::string* http_port);
 	
 		std::vector<std::string> SimpleRead();
 private:
 	const std::string filename;
-	void ReadAndSetValues(std::string& line, std::string* config_sqlhost, std::string* config_sqlport, std::string* config_dbname, std::string* config_username, std::string* config_password, std::string* config_url, std::string* config_crowler_depth, std::string* config_http_port);
+	void ReadAndSetValues(std::string& line, std::string* config_sqlhost, std::string* config_sqlport, std::string* config_dbname, std::string* config_username, std::string* config_password, std::string* config_url, std::string* config_crawler_depth, std::string* config_http_port);
 	void SetValue(std::string* destination, const std::string source, const std::string key, const std::string config_property);
 	
 	const std::string sql_host = "host";
@@ -30,6 +30,6 @@ private:
 	const std::string username = "username";
 	const std::string password = "password";
 	const std::string url = "url";
-	const std::string crowler_depth = "crowler_depth";
+	const std::string crawler_depth = "crawler_depth";
 	const std::string http_port = "http_port";
 };

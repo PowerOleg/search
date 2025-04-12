@@ -46,6 +46,9 @@
 #include "indexer.h"
 #include "file_manager.h"
 #include <cstdlib>
+#include <thread>
+#include <chrono>
+
 #pragma execution_character_set("utf-8")
 
 struct Config
@@ -56,7 +59,7 @@ struct Config
 	std::string username;//имя пользователя для подключения к базе данных;
 	std::string password;//пароль пользователя для подключения к базе данных;
 	std::string url;//стартовая страница для программы «Паук»;
-	std::string crowler_depth;//глубина рекурсии для программы «Паук»;
+	std::string crawler_depth;//глубина рекурсии для программы «Паук»;
 	std::string http_port;//порт для запуска программы - поисковика.
 };
 
@@ -67,6 +70,15 @@ void PrintConsole(std::string text)
 
 
 boost::asio::io_context ioc;
+
+void ThreadPoolGetPage(std::string& link, std::vector<std::shared_ptr<Webpage>>& pages, boost::asio::thread_pool& tpool)
+{
+	std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link);
+	pages.push_back(page);
+
+	auto page_Load = [&page] { page->LoadPage(); };
+	boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
+}
 
 int main(int argc, char** argv)
 {
@@ -81,7 +93,6 @@ int main(int argc, char** argv)
 	SetConsoleOutputCP(CP_UTF8);
 
 
-
 	Config config;
 	File_manager file_manager("config.ini");
 	file_manager.FillConfig(
@@ -91,51 +102,72 @@ int main(int argc, char** argv)
 		&config.username,
 		&config.password,
 		&config.url,
-		&config.crowler_depth,
+		&config.crawler_depth,
 		&config.http_port);
 	
-/*
-	//std::vector<std::vector<std::string>> all_links;
-	//std::unordered_set<std::string> ustUsed{ vUri.begin(), vUri.end() }; //для отработанных ссылок
-	std::vector<std::string> vUri{ "https://mail.ru/" };//начальная ссылка
+	std::queue<std::string> links_all;
+	std::vector<std::string> used_links;//для отработанных ссылок
+	links_all.push(config.url);//начальная ссылка
 	std::vector<std::shared_ptr<Webpage>> pages;
-	
 	std::atomic_int pages_count = 0;
+	
+	
 	size_t thread_quantity = 2;
 	boost::asio::thread_pool tpool{ thread_quantity };
-	for (const auto& sUri : vUri)
+	size_t сountdown = 1;
+	while (сountdown > 0)
 	{
-		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, sUri);
-		pages.push_back(page);
+		if (links_all.empty())
+		{
+			
+			if (pages.size() > pages_count)
+			{
+				std::vector<std::string> links = std::move(pages.at(pages_count++)->getLinks());//?оправданно?
+				for (size_t i = 0; i < links.size(); i++)
+				{
+					links_all.push(std::move(links.at(i)));
+				}
+			} 
+			else
+			{
+				std::cout << "empty" << std::endl;
+				std::chrono::milliseconds timespan(500);
+				std::this_thread::sleep_for(timespan);
+				сountdown--;
+			}
+			continue;
+		}
+		std::string link = links_all.front();
+		if (link == "")
+		{
+			continue;
+		}
+		links_all.pop();
+		used_links.push_back(link);
 
-		auto page_Load = [&page] { page->LoadPage(); };
-		boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
+		ThreadPoolGetPage(link, pages, tpool);//где-то тут падает
 	}
-	tpool.join();
+	tpool.join();//гдето-тут падает
 
 	std::string page_text = pages.at(0)->getPageText();
-	std::vector<std::string> links = pages.at(0)->getLinks();
-
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
-	pages.at(0)->MoveWords(std::move(words));
-	*/
-
-
+	std::shared_ptr<Webpage> page1 = pages.at(0);
+	page1->MoveWords(std::move(words));
+	
 
 
 	
 
-	File_manager file_manager_test_text("test.txt");
-	std::vector<std::string> words = file_manager_test_text.SimpleRead();
-
-	Indexer page_indexer("");//d
-	page_indexer.FilterSymbols(words);
-	std::map<std::string, int> counted_words = page_indexer.Count(words);
+	std::vector<std::string> words1 = page1->getWords();
+	page_indexer.FilterSymbols(words1);
+	std::map<std::string, int> counted_words = page_indexer.Count(words1);
 	Postgres_manager postgres("localhost", "5432", "pages", "postgres", "106");
 	postgres.Write("https://mail.ru/", counted_words);
 
-
-
 	return 0;
 };
+
+//File_manager file_manager_test_text("test.txt");//debug
+	//std::vector<std::string> words = file_manager_test_text.SimpleRead();//debug
+	//Indexer page_indexer("");//debug

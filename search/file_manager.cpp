@@ -10,7 +10,7 @@ void File_manager::FillConfig(
 	std::string* config_username,
 	std::string* config_password,
 	std::string* config_url,
-	std::string* config_crowler_depth,
+	std::string* config_crawler_depth,
 	std::string* config_http_port)
 {
 	std::string line;
@@ -23,9 +23,9 @@ void File_manager::FillConfig(
 
 	while (!(in >> line).eof())
 	{
-		ReadAndSetValues(line, config_sqlhost, config_sqlport, config_dbname, config_username, config_password, config_url, config_crowler_depth, config_http_port);
+		ReadAndSetValues(line, config_sqlhost, config_sqlport, config_dbname, config_username, config_password, config_url, config_crawler_depth, config_http_port);
 	}
-	ReadAndSetValues(line, config_sqlhost, config_sqlport, config_dbname, config_username, config_password, config_url, config_crowler_depth, config_http_port);
+	ReadAndSetValues(line, config_sqlhost, config_sqlport, config_dbname, config_username, config_password, config_url, config_crawler_depth, config_http_port);
 	in.close();
 }
 
@@ -53,7 +53,7 @@ std::vector<std::string> File_manager::SimpleRead()
 	return result;
 }
 
-void File_manager::ReadAndSetValues(std::string& line, std::string* config_sqlhost, std::string* config_sqlport, std::string* config_dbname, std::string* config_username, std::string* config_password, std::string* config_url, std::string* config_crowler_depth, std::string* config_http_port)
+void File_manager::ReadAndSetValues(std::string& line, std::string* config_sqlhost, std::string* config_sqlport, std::string* config_dbname, std::string* config_username, std::string* config_password, std::string* config_url, std::string* config_crawler_depth, std::string* config_http_port)
 {
 	size_t index = line.find("=");
 	std::string key = line.substr(0, index);
@@ -64,7 +64,7 @@ void File_manager::ReadAndSetValues(std::string& line, std::string* config_sqlho
 	SetValue(config_username, value, key, username);
 	SetValue(config_password, value, key, password);
 	SetValue(config_url, value, key, url);
-	SetValue(config_crowler_depth, value, key, crowler_depth);
+	SetValue(config_crawler_depth, value, key, crawler_depth);
 	SetValue(config_http_port, value, key, http_port);
 }
 

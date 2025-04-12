@@ -14,7 +14,10 @@
 #include <thread>
 #include <sstream>
 #include <map>
+#include <regex>
+#include <boost/algorithm/string.hpp>
 #include "gumbo.h"
+
 
 class Indexer
 {
@@ -23,9 +26,11 @@ public:
 	std::vector<std::string> getWords() { return this->words1; }
 	//std::ofstream out;
 	std::map<std::string, int> Count(const std::vector<std::string> &words);
+	void FilterSymbols(std::vector<std::string>& words);
+
 private:
 	void ExtractText(GumboNode* node);
-
+	void FilterWord(const std::string& word, std::string& filtered_word);
 	std::string page_body;
 	std::vector<std::string> words1;
 };

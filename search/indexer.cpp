@@ -54,14 +54,14 @@ void Indexer::ExtractText(GumboNode* node) {
 
 std::map<std::string, int> Indexer::Count(const std::vector<std::string> &words)
 {
-    std::map<std::string, int> count;
+    std::map<std::string, int> count_map;
     for (size_t i = 0; i < words.size(); i++)
     {
         std::string word = words.at(i);
-        if (count.contains(word))
+        if (count_map.contains(word))
         {
-            int quantity = count.at(word);
-            count.insert({ word , ++quantity });
+            int quantity = count_map.at(word);
+            count_map.insert({ word , ++quantity });
         }
         else
         {
@@ -69,8 +69,51 @@ std::map<std::string, int> Indexer::Count(const std::vector<std::string> &words)
             {
                 continue;
             }
-            count.insert({ word , 1 });
+            count_map.insert({ word , 1 });
         }
     }
-    return count;
+    return count_map;
+}
+
+void Indexer::FilterSymbols(std::vector<std::string> &words)
+{
+    std::vector<std::string> filtered_words;
+    std::regex pattern{ "[\"\\.,\\(\\[\\]':\\{\\}]+" }; //не понимает символ скобочки )
+    std::smatch match;
+
+    for (size_t i = 0; i < words.size(); i++)
+    {
+        std::string word = words.at(i);
+        //FilterWord(words.at(i), filtered_word);
+        boost::algorithm::to_lower(word);
+        for (size_t i = 0; i < word.length(); i++)
+        {
+            std::string symbol;
+            symbol.push_back(word[i]);
+            if (std::regex_search(symbol, pattern))
+            {
+                word.replace(i, 1, " ");
+            }
+
+        }
+
+        word.erase(std::remove(word.begin(), word.end(), ' '), word.end());
+        filtered_words.push_back(word);
+    }
+    words = std::move(filtered_words);
+}
+
+
+void Indexer::FilterWord(const std::string &word, std::string &filtered_word)
+{
+    std::cout << word << std::endl;
+    for (size_t i = 0; i < word.length(); i++)
+    {
+        if (std::isalpha(word[i]))
+        {
+            filtered_word += word[i];
+        }
+    }
+
+    std::cout << filtered_word << std::endl;
 }

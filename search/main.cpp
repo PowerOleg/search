@@ -130,6 +130,7 @@ int main(int argc, char** argv)
 	std::vector<std::string> words = file_manager_test_text.SimpleRead();
 
 	Indexer page_indexer("");//d
+	page_indexer.FilterSymbols(words);
 	std::map<std::string, int> counted_words = page_indexer.Count(words);
 	Postgres_manager postgres("localhost", "5432", "pages", "postgres", "106");
 	postgres.Write("https://mail.ru/", counted_words);

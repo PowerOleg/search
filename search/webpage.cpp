@@ -127,7 +127,73 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
 
 std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
 {
-    return std::vector<std::string>();
+    std::vector<std::string> vLinks;
+
+    GumboAttribute* hrefBase = nullptr;
+    GumboOutput* output = gumbo_parse(sBody.c_str());
+
+    std::queue<GumboNode*> qn;
+    qn.push(output->root);
+
+    while (!qn.empty())
+    {
+        GumboNode* node = qn.front();
+        qn.pop();
+        if (GUMBO_NODE_ELEMENT == node->type)
+        {
+            GumboAttribute* href = nullptr;
+            if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href")))
+            {
+                std::string sLnk{ href->value };
+                if (!sLnk.empty())
+                {
+                    vLinks.emplace_back(href->value);
+                }
+            }
+            else if (node->v.element.tag == GUMBO_TAG_BASE && (hrefBase = gumbo_get_attribute(&node->v.element.attributes, "href")))
+            {
+            }
+            GumboVector* children = &node->v.element.children;
+            for (unsigned int i = 0; i < children->length; ++i)
+            {
+                qn.push(static_cast<GumboNode*>(children->data[i]));
+            }
+        }
+    }
+
+    if (hrefBase) // с учётом тега <base>
+    {
+        std::string sBase = hrefBase->value;
+        {
+            //std::lock_guard<std::mutex> lg{ mtx };
+            //std::cout << "<base> found: " << sBase << "\n\n";
+        }
+        if (sBase.back() == '/')
+        {
+            sBase.pop_back();
+        }
+        for (auto& sLnk : vLinks)
+        {
+            if (std::regex_match(sLnk, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(sLnk, std::regex{ "[^/#?]+" })) // относительно дочерней или текущей директории
+            {
+                sLnk = sBase + '/' + sLnk;
+            }
+            else if (sLnk.find("../") == 0) // относительно родительской директории
+            {
+                int ind = std::string::npos;
+                int cnt = (sLnk.rfind("../") + 3) / 3;
+                for (int i = 0; i < cnt + 1; ++i)
+                {
+                    ind = sBase.rfind('/', ind - 1);
+                }
+                sLnk = std::string{ sBase.begin(), sBase.begin() + ind + 1 } + std::string{ sLnk.begin() + cnt * 3, sLnk.end() };
+            }
+            sLnk;
+        }
+    }
+
+    gumbo_destroy_output(&kGumboDefaultOptions, output);
+    return vLinks;
 }
 
 //int Webpage::SimpleHttpRequest()

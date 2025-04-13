@@ -35,7 +35,10 @@
 */
 
 #include <boost/beast/core.hpp>
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <boost/asio/io_context.hpp>
 #include <string>
 #include <map>
 #include <memory>
@@ -71,13 +74,13 @@ void PrintConsole(std::string text)
 
 boost::asio::io_context ioc;
 
-void ThreadPoolGetPage(std::string& link, std::vector<std::shared_ptr<Webpage>>& pages, boost::asio::thread_pool& tpool)
+void ThreadPoolGetPage(std::string &link, std::vector<std::shared_ptr<Webpage>> &pages, boost::asio::thread_pool &tpool)
 {
 	std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link);
 	pages.push_back(page);
 
 	auto page_Load = [&page] { page->LoadPage(); };
-	boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
+	boost::asio::dispatch(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
 }
 
 int main(int argc, char** argv)
@@ -113,30 +116,32 @@ int main(int argc, char** argv)
 	
 	
 	size_t thread_quantity = 2;
+	boost::asio::io_context io_context;
 	boost::asio::thread_pool tpool{ thread_quantity };
-	size_t сountdown = 1;
+	size_t сountdown = 10000;
 	while (сountdown > 0)
 	{
-		if (links_all.empty())
-		{
-			
-			if (pages.size() > pages_count)
-			{
-				std::vector<std::string> links = std::move(pages.at(pages_count++)->getLinks());//?оправданно?
-				for (size_t i = 0; i < links.size(); i++)
-				{
-					links_all.push(std::move(links.at(i)));
-				}
-			} 
-			else
-			{
-				std::cout << "empty" << std::endl;
-				std::chrono::milliseconds timespan(500);
-				std::this_thread::sleep_for(timespan);
-				сountdown--;
-			}
-			continue;
-		}
+		сountdown--;
+		//if (links_all.empty())
+		//{
+		//	
+		//	if (pages.size() > pages_count)
+		//	{
+		//		std::vector<std::string> links = std::move(pages.at(pages_count++)->getLinks());//?оправданно?
+		//		for (size_t i = 0; i < links.size(); i++)
+		//		{
+		//			links_all.push(std::move(links.at(i)));
+		//		}
+		//	} 
+		//	else
+		//	{
+		//		std::cout << "empty" << std::endl;
+		//		//std::chrono::milliseconds timespan(500);
+		//		//std::this_thread::sleep_for(timespan);
+		//		сountdown--;
+		//	}
+		//	continue;
+		//}
 		std::string link = links_all.front();
 		if (link == "")
 		{
@@ -146,8 +151,9 @@ int main(int argc, char** argv)
 		used_links.push_back(link);
 
 		ThreadPoolGetPage(link, pages, tpool);//где-то тут падает
+		
 	}
-	tpool.join();//гдето-тут падает
+	tpool.join();
 
 	std::string page_text = pages.at(0)->getPageText();
 	Indexer page_indexer(page_text);

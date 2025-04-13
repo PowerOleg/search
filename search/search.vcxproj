@@ -131,7 +131,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>gumbo.lib;libssl.lib;libcrypto.lib;libpq.lib;pqxx.lib;ws2_32.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\cpp\eleventh\vcpkg\installed\x64-windows\lib;C:\cpp\installopenssl\dllx64Release\lib;C:\Program Files\PostgreSQL\16\lib;C:\cpp\libpqxx-7.9.2\libpqxx-7.9.2\out\install\x64-Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\cpp\boost_1_87Bin\lib64-msvc-14.3;C:\cpp\eleventh\vcpkg\installed\x64-windows\lib;C:\cpp\installopenssl\dllx64Release\lib;C:\Program Files\PostgreSQL\16\lib;C:\cpp\libpqxx-7.9.2\libpqxx-7.9.2\out\install\x64-Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

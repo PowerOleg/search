@@ -46,7 +46,7 @@ void ThreadPoolGetPage(std::string &link, std::vector<std::shared_ptr<Webpage>> 
 	pages.push_back(page);
 
 	auto page_Load = [&page] { page->LoadPage(); };
-	boost::asio::dispatch(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
+	boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
 }
 
 

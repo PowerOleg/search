@@ -38,16 +38,16 @@ public:
 	Webpage& operator=(Webpage const&) = delete;
 
 	Webpage(boost::asio::io_context& ioc_, const std::string url_);
-	//int SimpleHttpRequest();
-	//int HttpWebSocketRequest();
 
 	void LoadPage();
 	std::string GetPageText() { return page_text; };
 	std::vector<std::string> GetLinks() { return vLinks; };
 	void MoveWords(std::vector<std::string>&& words_) { this->words = std::move(words_); };
 	std::vector<std::string> GetWords() { return words; };
+	std::string GetPageUrl() { return url; };
 	bool IsValid();
 	void SetValid();
+
 private:
 	std::vector<std::string> LoadHttp(const std::smatch& match);
 	std::vector<std::string> LoadHttps(std::smatch const& match);

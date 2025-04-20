@@ -14,7 +14,6 @@
 #include "file_manager.h"
 #include <cstdlib>
 #include "thread_pool.h"
-#include "main.h"
 
 #pragma execution_character_set("utf-8")
 
@@ -39,7 +38,7 @@ void PrintConsole(std::string text)
 boost::asio::io_context iocPage;
 bool working = true;
 
-bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count)
+bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages)
 {
 	if (links_all.empty())
 	{
@@ -52,6 +51,8 @@ bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr
 		if (links.size() > 0)
 		{
 			pages.at(pages_count)->SetValid();
+			valid_pages.push_back(pages.at(pages_count));
+
 			for (size_t i = 0; i < links.size(); i++)
 			{
 				links_all.push(std::move(links.at(i)));
@@ -85,57 +86,21 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 	return link;
 }
 
-void ThreadPoolProcessPages(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::string> &used_links)
+void WriteWordsInDatabase(std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config)
 {
-	size_t thread_quantity = 2;
-	Thread_pool thread_pool(thread_quantity);
-	size_t postgres_count = 0;
-	
-	while (working)
-	{
-		if (!UpdateLinks(links_all, pages, pages_count))
-		{
-			continue;
-		}
-
-		int return_flag;
-		std::string link = GetLink(links_all, used_links, return_flag);
-		if (return_flag == 3)
-		{
-			continue;
-		}
-
-		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(iocPage, link);
-		pages.push_back(page);
-		auto page_Load = [&page] { page->LoadPage(); };
-		thread_pool.Enqueue(page_Load);
-
-		if (pages_count < 10)
-		{
-			continue;
-		}
-		WriteWordsInDatabase(pages, postgres_count);
-	}
-	
-}
-
-void WriteWordsInDatabase(std::vector<std::shared_ptr<Webpage>> &pages, size_t postgres_count)
-{
-	std::string page_text = pages.at(postgres_count)->GetPageText();
-
+	std::shared_ptr<Webpage> page1 = pages.at(postgres_count);
+	std::string page_text = page1->GetPageText();
 
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
-	std::shared_ptr<Webpage> page1 = pages.at(postgres_count);
 	page1->MoveWords(std::move(words));
-
 
 	std::vector<std::string> words1 = page1->GetWords();
 	page_indexer.FilterSymbols(words1);
 	std::map<std::string, int> counted_words = page_indexer.Count(words1);
 
-	//Postgres_manager postgres("localhost", "5432", "pages", "postgres", "106");
-	//postgres.Write("https://mail.ru/", counted_words);
+	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
+	//postgres.Write(page1->GetPageUrl(), counted_words);
 }
 
 int main(int argc, char** argv)
@@ -167,9 +132,38 @@ int main(int argc, char** argv)
 	std::vector<std::string> used_links;//для отработанных ссылок
 	links_all.push(config.url);//начальная ссылка
 	std::vector<std::shared_ptr<Webpage>> pages;
+	std::vector<std::shared_ptr<Webpage>> valid_pages;
 	std::atomic_int pages_count = 0;
 	
-	ThreadPoolProcessPages(links_all, pages, pages_count, used_links);
+	size_t thread_quantity = 2;
+	Thread_pool thread_pool(thread_quantity);
+	size_t postgres_count = 0;
+
+	while (working)
+	{
+		if (!UpdateLinks(links_all, pages, pages_count, valid_pages))
+		{
+			continue;
+		}
+
+		int return_flag;
+		std::string link = GetLink(links_all, used_links, return_flag);
+		if (return_flag == 3)
+		{
+			continue;
+		}
+
+		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(iocPage, link);
+		pages.push_back(page);
+		auto page_Load = [&page] { page->LoadPage(); };
+		thread_pool.Enqueue(page_Load);
+
+		if (valid_pages.size() < 2)
+		{
+			continue;
+		}
+		WriteWordsInDatabase(valid_pages, postgres_count, config);
+	}
 
 	return 0;
 }

@@ -12,7 +12,10 @@ Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_) : ioc{ ioc_ },
 void Webpage::LoadPage()
 {
     std::smatch match;
-    if (std::regex_match(this->url, match, rUri))
+    std::cout << "regex_match: " << this->url << std::endl;
+    std::chrono::milliseconds timespan(200);
+    std::this_thread::sleep_for(timespan);
+    if (std::regex_match(this->url, match, regex_pattern))
     {
         if (match[1].str() == "http")
         {
@@ -27,7 +30,7 @@ void Webpage::LoadPage()
     {
         {
             std::lock_guard<std::mutex> lg{ mtx };
-            std::cerr << "load() std::regex_match() failed: " + url << "\n\n";
+            std::cerr << "Error!!!LoadPage() std::regex_match() failed: " + url << "\nThis is not an url\n";
         }
     }
 }

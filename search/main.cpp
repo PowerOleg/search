@@ -13,10 +13,7 @@
 #include "indexer.h"
 #include "file_manager.h"
 #include <cstdlib>
-#include <thread>
-#include <chrono>
 #include "thread_pool.h"
-#include "main.h"
 
 #pragma execution_character_set("utf-8")
 
@@ -38,21 +35,11 @@ void PrintConsole(std::string text)
 }
 
 
-boost::asio::io_context ioc;
+boost::asio::io_context iocPage;
+bool working = true;
 
-void ThreadPoolGetPage(std::string &link, std::vector<std::shared_ptr<Webpage>> &pages, boost::asio::thread_pool &tpool)
+bool UpdateLinks(std::queue<std::string>& links_all, std::vector<std::shared_ptr<Webpage>>& pages, std::atomic_int& pages_count)
 {
-	std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link);
-	pages.push_back(page);
-
-	auto page_Load = [&page] { page->LoadPage(); };
-	boost::asio::post(tpool, page_Load);//  boost::asio::post() или boost::asio::dispatch()// boost::asio::post(tpool, std::bind(&Webpage::Load, this, std::cref(sUri), std::ref(links.back()))
-}
-
-
-void UpdateLinks(std::queue<std::string>& links_all, std::vector<std::shared_ptr<Webpage>>& pages, std::atomic_int& pages_count, size_t& сountdown, int& retFlag)
-{
-	retFlag = 1;
 	if (links_all.empty())
 	{
 		std::vector<std::string> links = pages.at(pages_count)->getLinks();
@@ -64,67 +51,51 @@ void UpdateLinks(std::queue<std::string>& links_all, std::vector<std::shared_ptr
 				links_all.push(std::move(links.at(i)));
 			}
 			pages_count++;
+			return true;
 		}
-		else
-		{
-			std::cout << "empty" << std::endl;
-			//std::chrono::milliseconds timespan(500);
-			//std::this_thread::sleep_for(timespan);
-			сountdown--;
-		}
-		{ retFlag = 3; return; };
+			//std::cout << "empty" << std::endl;
+			return false;
 	}
+	return true;
 }
 
-void ThreadPoolImplementation1(std::queue<std::string>& links_all, std::vector<std::shared_ptr<Webpage>>& pages, std::atomic_int& pages_count, std::vector<std::string>& used_links)
+
+std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string> &used_links, int &ret_flag)
 {
-	size_t thread_quantity = 2;
-	boost::asio::thread_pool tpool{ thread_quantity };
-	size_t сountdown = 10000;
-	while (сountdown > 0)
+	ret_flag = 1;
+	std::string link = links_all.front();
+	links_all.pop();
+	std::cout << "links_all size: " << links_all.size() << std::endl;
+	std::chrono::milliseconds timespan(200);
+	std::this_thread::sleep_for(timespan);
+	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
+	std::smatch match;
+	if (link == "" || !std::regex_match(link, match, regex_pattern))
 	{
-
-		int retFlag;
-		UpdateLinks(links_all, pages, pages_count, сountdown, retFlag);//этот блок кода вызывает exception у tpool
-		if (retFlag == 3) continue;
-
-
-		std::string link = links_all.front();
-		if (link == "")
-		{
-			continue;
-		}
-		links_all.pop();
-		used_links.push_back(link);
-
-		ThreadPoolGetPage(link, pages, tpool);
-
+		ret_flag = 3; 
+		return link;
 	}
-	tpool.join();
-};
+	used_links.push_back(link);
+	return link;
+}
 
 void ThreadPoolImplementation2(std::queue<std::string>& links_all, std::vector<std::shared_ptr<Webpage>>& pages, std::atomic_int& pages_count, std::vector<std::string>& used_links)
 {
 	size_t thread_quantity = 2;
-	Thread_pool thread_pool(ioc, thread_quantity);
+	Thread_pool thread_pool(thread_quantity);
 
-	size_t сountdown = 10000;
-	while (сountdown > 0)
+	
+	while (working)
 	{
-		int retFlag;
-		UpdateLinks(links_all, pages, pages_count, сountdown, retFlag);
-		if (retFlag == 3) continue;
-
-
-		std::string link = links_all.front();
-		if (link == "")
+		if (!UpdateLinks(links_all, pages, pages_count))
 		{
 			continue;
 		}
-		links_all.pop();
-		used_links.push_back(link);
+		int return_flag;
+		std::string link = GetLink(links_all, used_links, return_flag);
+		if (return_flag == 3) continue;
 
-		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link);
+		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(iocPage, link);
 		pages.push_back(page);
 		auto page_Load = [&page] { page->LoadPage(); };
 		
@@ -164,10 +135,7 @@ int main(int argc, char** argv)
 	std::vector<std::shared_ptr<Webpage>> pages;
 	std::atomic_int pages_count = 0;
 	
-	
-	//ThreadPoolImplementation1(links_all, pages, pages_count, used_links);
 	ThreadPoolImplementation2(links_all, pages, pages_count, used_links);
-
 
 	std::string page_text = pages.at(0)->getPageText();
 	std::vector<std::string> page_links = pages.at(0)->getLinks();

@@ -59,9 +59,9 @@ private:
 	const std::string port = "80";
 	const int version = 11;
 
-	std::regex rUri{ "^(?:(https?)://)([^/]+)(/.*)?" };
+	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::mutex mtx;
-	/*static*/ boost::asio::io_context& ioc;
+	boost::asio::io_context& ioc;
 
 	std::string page_text;
 	std::vector<std::string> vLinks;

@@ -43,6 +43,10 @@ bool UpdateLinks(std::queue<std::string>& links_all, std::vector<std::shared_ptr
 	if (links_all.empty())
 	{
 		std::vector<std::string> links = pages.at(pages_count)->getLinks();
+		if (pages_count + 1 < pages.size() && links.size() == 0)
+		{
+			pages_count++;
+		}
 		//std::vector<std::string> links = std::move(pages.at(pages_count++)->getLinks());//?std::move() оправданно?
 		if (links.size() > 0)
 		{

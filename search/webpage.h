@@ -42,11 +42,12 @@ public:
 	//int HttpWebSocketRequest();
 
 	void LoadPage();
-	std::string getPageText() { return page_text; };
-	std::vector<std::string> getLinks() { return vLinks; };
+	std::string GetPageText() { return page_text; };
+	std::vector<std::string> GetLinks() { return vLinks; };
 	void MoveWords(std::vector<std::string>&& words_) { this->words = std::move(words_); };
-	std::vector<std::string> getWords() { return words; };
-
+	std::vector<std::string> GetWords() { return words; };
+	bool IsValid();
+	void SetValid();
 private:
 	std::vector<std::string> LoadHttp(const std::smatch& match);
 	std::vector<std::string> LoadHttps(std::smatch const& match);
@@ -66,5 +67,6 @@ private:
 	std::string page_text;
 	std::vector<std::string> vLinks;
 	std::vector<std::string> words;
+	bool is_valid_page = false;
 };
 

@@ -35,6 +35,16 @@ void Webpage::LoadPage()
     }
 }
 
+bool Webpage::IsValid()
+{
+    return is_valid_page;
+}
+
+void Webpage::SetValid()
+{
+    this->is_valid_page = true;
+}
+
 std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
 {
     std::vector<std::string> vLinks;

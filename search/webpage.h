@@ -1,5 +1,5 @@
 #pragma once
-#include "C:/cpp/boost_1_87Bin/libs/beast/example/common/root_certificates.hpp" //прописать свой путь
+//#include "C:/cpp/boost_1_87Bin/libs/beast/example/common/root_certificates.hpp" //прописать свой путь
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
@@ -10,7 +10,6 @@
 #include <boost/asio/thread_pool.hpp>
 #include <cstdlib>
 #include <iostream>
-#include <string>
 #include <fstream>
 #include <regex>
 #include <queue>
@@ -20,7 +19,6 @@
 #include <functional>
 #include <iomanip>
 #include <unordered_set>
-//#include <boost/bind.hpp>
 #include "gumbo.h"
 
 

@@ -1,11 +1,9 @@
 #pragma once
 #include <pqxx/pqxx>
-//#include <Windows.h>
-#include "common.h"
+#include <string>
 #include <vector>
 #include <map>
-#include <string>
-//using namespace pqxx;
+#include <iostream>
 
 class Postgres_manager
 {

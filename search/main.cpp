@@ -1,18 +1,10 @@
-﻿#include <boost/beast/core.hpp>
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/asio/io_context.hpp>
-#include <string>
-#include <map>
+﻿#include <boost/asio/io_context.hpp>
 #include <memory>
-#include <clocale>
-#include <locale>
+#include <string>
 #include "webpage.h"
 #include "postgres_manager.h"
 #include "indexer.h"
 #include "file_manager.h"
-#include <cstdlib>
 #include "thread_pool.h"
 
 #pragma execution_character_set("utf-8")
@@ -47,13 +39,12 @@ bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr
 		{
 			pages_count++;
 		}
-		//std::vector<std::string> links = std::move(pages.at(pages_count++)->getLinks());//?std::move() оправданно?
 		if (links.size() > 0)
 		{
-			pages.at(pages_count)->SetValid();
-			valid_pages.push_back(pages.at(pages_count));
+			//pages.at(pages_count)->SetValid();
+			valid_pages.push_back(std::move(pages.at(pages_count)));
 
-			for (size_t i = 0; i < links.size(); i++)
+			for (size_t i = 0; i < links.size(); i++)//refactor?
 			{
 				links_all.push(std::move(links.at(i)));
 			}
@@ -88,33 +79,24 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 
 void WriteWordsInDatabase(std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config)
 {
-	std::shared_ptr<Webpage> page1 = pages.at(postgres_count);
+	std::shared_ptr<Webpage> page1 = pages.at(postgres_count++);
 	std::string page_text = page1->GetPageText();
 
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
-	page1->MoveWords(std::move(words));
-
-	std::vector<std::string> words1 = page1->GetWords();
-	page_indexer.FilterSymbols(words1);
-	std::map<std::string, int> counted_words = page_indexer.Count(words1);
+	//page1->MoveWords(std::move(words));
+	//std::vector<std::string> words1 = page1->GetWords();
+	page_indexer.FilterSymbols(words);
+	std::map<std::string, int> counted_words = page_indexer.Count(std::move(words));
 
 	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
-	//postgres.Write(page1->GetPageUrl(), counted_words);
+	postgres.Write(page1->GetPageUrl(), counted_words);
 }
 
 int main(int argc, char** argv)
 {
-	//setlocale(LC_ALL, "");
-	//system("chcp 1251");
-	//std::locale::global(std::locale(""));
-	//system("chcp 1251 > nul");
-	//system("chcp utf-8 > nul");
-	//setlocale(LC_ALL, "ru");
-
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
-
 
 	Config config;
 	File_manager file_manager("config.ini");

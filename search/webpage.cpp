@@ -93,9 +93,12 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         std::string const target = (match[3].length() == 0 ? "/" : match[3].str());
         int version = 11;
 
-        ssl::context ctx{ ssl::context::sslv23_client };
-        load_root_certificates(ctx);
-        ssl::stream<tcp::socket> stream{ ioc, ctx };
+        boost::asio::ssl::context ctx{ boost::asio::ssl::context::sslv23_client };
+        //boost::asio::ssl::context ctx{ net::ssl::verify_none };
+        ctx.set_verify_mode(net::ssl::verify_none);
+        ctx.set_default_verify_paths();
+        //load_root_certificates(ctx);
+        boost::asio::ssl::stream<tcp::socket> stream{ ioc, ctx };
         if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str()))
         {
             boost::system::error_code ec{ static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category() };
@@ -104,7 +107,7 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         tcp::resolver resolver{ ioc };
         auto const results = resolver.resolve(host, "443");
         boost::asio::connect(stream.next_layer(), results.begin(), results.end());
-        stream.handshake(ssl::stream_base::client);
+        stream.handshake(boost::asio::ssl::stream_base::client);
         http::request<http::string_body> req{ http::verb::get, target, version };
         req.set(http::field::host, host);
         req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);

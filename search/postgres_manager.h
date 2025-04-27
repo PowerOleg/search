@@ -10,7 +10,7 @@ class Postgres_manager
 public:
 	Postgres_manager(std::string host, std::string port, std::string dbname, std::string username, std::string password);
 	
-	bool Write(const std::string url, const std::map<std::string, int>& counted_words);
+	bool Write(const std::string url, size_t postgres_count, const std::map<std::string, int>& counted_words, long& word_number);
 
 	void SelectTest()
 	{

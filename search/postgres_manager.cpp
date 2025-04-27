@@ -20,6 +20,8 @@ bool Postgres_manager::Clean()
 	{
 		pqxx::work tx{ this->connection };
 		tx.exec("TRUNCATE " + table1 + ", " + table2 + ", " + table3 + ";");
+		tx.exec("SELECT setval('" + table1 + "_id_seq', 1, false);");//tx.exec("ALTER SEQUENCE " + table1 + "_id_seq RESTART WITH 1;");
+		tx.exec("SELECT setval('" + table2 + "_id_seq', 1, false);");//tx.exec("ALTER SEQUENCE " + table2 + "_id_seq RESTART WITH 1;");
 		tx.commit();
 		result = true;
 	}
@@ -70,7 +72,7 @@ bool Postgres_manager::InitTables()
 	return result;
 }
 
-bool Postgres_manager::Write(const std::string url, const std::map<std::string, int> &counted_words)
+bool Postgres_manager::Write(const std::string url, size_t postgres_count, const std::map<std::string, int>& counted_words, long& word_number)
 {
 	bool result = false;
 	//std::vector<std::string> words;
@@ -97,44 +99,43 @@ bool Postgres_manager::Write(const std::string url, const std::map<std::string, 
 		std::cout << e.what() << std::endl;
 	}
 
+	//std::string document_id = "";
+	//try
+	//{
+	//	pqxx::work tx2{ connection };
+	//	document_id = tx2.query_value<std::string>(
+	//		"SELECT d.id FROM documents d where d.document = " + url + ";"
+	//	);
+	//	tx2.commit();
+	//	std::cout << "select query" << std::endl;
+	//}
+	//catch (const std::exception& e)
+	//{
+	//	std::cout << e.what() << std::endl;
+	//}
+	//std::cout << "document_id: " << document_id << std::endl;
 
-	std::string document_id = "1";
-	
+
+	std::string document_id = std::to_string(postgres_count);
+	std::cout << "document_id: " << document_id << std::endl;
 	try
 	{
-		pqxx::work tx2{ connection };
-		long word_number = 1L;
+		pqxx::work tx3{ connection };
+		
 		for (const auto& word_and_quantity : counted_words)
 		{
-			std::string word = word_and_quantity.first;
-			std::string quantity = std::to_string(word_and_quantity.second);
+			//std::string word = word_and_quantity.first;
+			//std::string word_id = std::to_string(word_number++);
+			//std::string quantity = std::to_string();
 
-		
-			std::string word_id = std::to_string(word_number++);
-			tx2.exec_prepared("prepared_insert_documents_words", document_id, word_id, quantity);//prepared statement
+			tx3.exec_prepared("prepared_insert_documents_words", document_id, word_number++, word_and_quantity.second);//prepared statement
 		}
-		tx2.commit();
+		tx3.commit();
 		result = true;
 }
 catch (const std::exception& e)
 {
 	std::cout << e.what() << std::endl;
 }
-
-
-
-//for debug
-/*	pqxx::work tx3{connection};
-	std::string table1 = "Documents";
-	std::string table2 = "Words";
-	std::string table3 = "Documents_words";
-
-	pqxx::work tx{ this->connection };
-	tx.exec("drop table " + table1 + " CASCADE;");
-	tx.exec("drop table " + table2 + " CASCADE;");
-	tx.exec("drop table " + table3 + " CASCADE;");
-	tx3.commit();
-	*/
-
 	return result;
 }

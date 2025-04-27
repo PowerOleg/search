@@ -4,7 +4,7 @@
 Indexer::Indexer(const std::string& page_body)// : out{ "test.txt" }
 {
 	this->page_body = page_body;
-	printf("Indexing...");
+	printf("Indexing...\n");
     std::vector<std::string> hrefs;
 
     GumboAttribute* hrefBase = nullptr;

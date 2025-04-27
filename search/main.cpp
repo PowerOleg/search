@@ -77,20 +77,17 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 	return link;
 }
 
-void WriteWordsInDatabase(std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config)
+void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config, long &word_number)
 {
 	std::shared_ptr<Webpage> page1 = pages.at(postgres_count++);
 	std::string page_text = page1->GetPageText();
-
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
 	//page1->MoveWords(std::move(words));
 	//std::vector<std::string> words1 = page1->GetWords();
 	page_indexer.FilterSymbols(words);
 	std::map<std::string, int> counted_words = page_indexer.Count(std::move(words));
-
-	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
-	postgres.Write(page1->GetPageUrl(), counted_words);
+	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
 }
 
 int main(int argc, char** argv)
@@ -120,7 +117,9 @@ int main(int argc, char** argv)
 	size_t thread_quantity = 2;
 	Thread_pool thread_pool(thread_quantity);
 	size_t postgres_count = 0;
-
+	long word_number = 1L;
+	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
+	
 	while (working)
 	{
 		if (!UpdateLinks(links_all, pages, pages_count, valid_pages))
@@ -144,7 +143,7 @@ int main(int argc, char** argv)
 		{
 			continue;
 		}
-		WriteWordsInDatabase(valid_pages, postgres_count, config);
+		WriteWordsInDatabase(postgres, valid_pages, postgres_count, config, word_number);
 	}
 
 	return 0;

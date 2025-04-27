@@ -64,7 +64,7 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 	std::string link = links_all.front();
 	links_all.pop();
 	std::cout << "links_all size: " << links_all.size() << std::endl;
-	std::chrono::milliseconds timespan(200);
+	std::chrono::milliseconds timespan(100);
 	std::this_thread::sleep_for(timespan);
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::smatch match;

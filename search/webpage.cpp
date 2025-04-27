@@ -13,7 +13,7 @@ void Webpage::LoadPage()
 {
     std::smatch match;
     std::cout << "regex_match: " << this->url << std::endl;
-    std::chrono::milliseconds timespan(200);
+    std::chrono::milliseconds timespan(100);
     std::this_thread::sleep_for(timespan);
     if (std::regex_match(this->url, match, regex_pattern))
     {

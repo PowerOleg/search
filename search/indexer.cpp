@@ -1,5 +1,4 @@
 #include "indexer.h"
-//#include <locale>
 
 Indexer::Indexer(const std::string& page_body)// : out{ "test.txt" }
 {
@@ -78,7 +77,7 @@ std::map<std::string, int> Indexer::Count(const std::vector<std::string> &words)
 void Indexer::FilterSymbols(std::vector<std::string> &words)
 {
     std::vector<std::string> filtered_words;
-    std::regex pattern{ "[\"\\.,\\(\\[\\]':\\{\\}]+" }; //не понимает символ скобочки )
+    std::regex pattern{ "[\"\\.,\\(\\[\\]':\\{\\}]+" }; //не понимает символ правой скобочки )
     std::smatch match;
 
     for (size_t i = 0; i < words.size(); i++)
@@ -104,9 +103,8 @@ void Indexer::FilterSymbols(std::vector<std::string> &words)
 }
 
 
-void Indexer::FilterWord(const std::string &word, std::string &filtered_word)
+void Indexer::FilterWord(const std::string &word, std::string &filtered_word)//doesn't use
 {
-    std::cout << word << std::endl;
     for (size_t i = 0; i < word.length(); i++)
     {
         if (std::isalpha(word[i]))
@@ -114,6 +112,4 @@ void Indexer::FilterWord(const std::string &word, std::string &filtered_word)
             filtered_word += word[i];
         }
     }
-
-    std::cout << filtered_word << std::endl;
 }

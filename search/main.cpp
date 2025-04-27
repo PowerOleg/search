@@ -139,17 +139,11 @@ int main(int argc, char** argv)
 		auto page_Load = [&page] { page->LoadPage(); };
 		thread_pool.Enqueue(page_Load);
 
-		if (valid_pages.size() < 2)
+		if (valid_pages.size() > postgres_count)
 		{
-			continue;
+			WriteWordsInDatabase(postgres, valid_pages, postgres_count, config, word_number);
 		}
-		WriteWordsInDatabase(postgres, valid_pages, postgres_count, config, word_number);
 	}
 
 	return 0;
 }
-
-
-//File_manager file_manager_test_text("test.txt");//debug
-	//std::vector<std::string> words = file_manager_test_text.SimpleRead();//debug
-	//Indexer page_indexer("");//debug

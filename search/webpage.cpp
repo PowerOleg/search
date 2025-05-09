@@ -212,6 +212,46 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
     return vLinks;
 }
 
+// исправляет некоторые относительные ссылки в абсолютные
+void AbsLinks(std::vector<std::string> const& vUri, std::vector<std::vector<std::string>>& vres)
+{
+    std::smatch mr;
+    for (int i = 0; i < vUri.size(); ++i)
+    {
+        std::string sUri = vUri.at(i);
+        for (auto& sLnk : vres.at(i))
+        {
+            if (sLnk.find("//") == 0) // относительно протокола
+            {
+                std::regex_search(sUri, mr, std::regex{ "^[^/]+" });
+                sLnk = mr.str() + sLnk;
+            }
+            else if (sLnk.find('/') == 0) // относительно имени хоста
+            {
+                std::regex_search(sUri, mr, std::regex{ "^[^/]+//[^/]+" });
+                sLnk = mr.str() + sLnk;
+            }
+            else if (sLnk.find("../") == 0) // относительно родительской директории
+            {
+                int ind = std::string::npos;
+                int cnt = (sLnk.rfind("../") + 3) / 3;
+                for (int i = 0; i < cnt + 1; ++i)
+                {
+                    ind = sUri.rfind('/', ind - 1);
+                }
+                sLnk = std::string{ sUri.begin(), sUri.begin() + ind + 1 } + std::string{ sLnk.begin() + cnt * 3, sLnk.end() };
+            }
+            else if (std::regex_match(sLnk, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(sLnk, std::regex{ "[^/#?]+" })) // относительно дочерней директории или просто имя файла
+            {
+                int ind = sUri.rfind('/');
+                sLnk = std::string{ sUri.begin(), sUri.begin() + ind + 1 } + sLnk;
+            }
+
+            //std::cout << sLnk << std::endl;
+        }
+    }
+}
+
 //int Webpage::SimpleHttpRequest()
 //{
 //    try

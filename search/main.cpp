@@ -30,20 +30,31 @@ void PrintConsole(std::string text)
 boost::asio::io_context iocPage;
 bool working = true;
 
-bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages)
+void UpdateRecursionLevel(int& number_to_update_recursion, int &recursion_count, const std::atomic_int &pages_count,  const int links_size)
+{
+	if (number_to_update_recursion >= pages_count)//maybe there is a mistake
+	{
+		number_to_update_recursion += links_size;
+		recursion_count++;
+		//int crawler_depth_int = atoi(crawler_depth.c_str());
+		//crawler_depth = std::to_string(++crawler_depth_int);
+	}
+}
+
+bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages, int &number_to_update_recursion, int &recursion_count)
 {
 	if (links_all.empty())
 	{
 		std::vector<std::string> links = pages.at(pages_count)->GetLinks();
 		if (pages_count + 1 < pages.size() && links.size() == 0)
 		{
-			pages_count++;
+			pages_count++;//this condition means it's bad page so just go next
 		}
 		if (links.size() > 0)
 		{
-			//pages.at(pages_count)->SetValid();
+			UpdateRecursionLevel(number_to_update_recursion, recursion_count, pages_count, links.size());
 			valid_pages.push_back(std::move(pages.at(pages_count)));
-
+			
 			for (size_t i = 0; i < links.size(); i++)//refactor?
 			{
 				links_all.push(std::move(links.at(i)));
@@ -51,7 +62,6 @@ bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr
 			pages_count++;
 			return true;
 		}
-			//std::cout << "empty" << std::endl;
 			return false;
 	}
 	return true;
@@ -113,6 +123,8 @@ int main(int argc, char** argv)
 	std::vector<std::shared_ptr<Webpage>> pages;
 	std::vector<std::shared_ptr<Webpage>> valid_pages;
 	std::atomic_int pages_count = 0;
+	int recursion_count = 1;//отражает текущее значение рекурксии
+	int number_to_update_recursion = 1;
 	
 	size_t thread_quantity = 2;
 	Thread_pool thread_pool(thread_quantity);
@@ -122,10 +134,15 @@ int main(int argc, char** argv)
 	
 	while (working)
 	{
-		if (!UpdateLinks(links_all, pages, pages_count, valid_pages))
+		if (!UpdateLinks(links_all, pages, pages_count, valid_pages, number_to_update_recursion, recursion_count))
 		{
 			continue;
 		}
+		if (recursion_count >= atoi(config.crawler_depth.c_str()))//refactor
+		{
+			working = false;
+		}
+
 
 		int return_flag;
 		std::string link = GetLink(links_all, used_links, return_flag);

@@ -45,6 +45,7 @@ public:
 	std::string GetPageUrl() { return url; };
 	bool IsValid();
 	void SetValid();
+	void AbsLinks(std::vector<std::string> const& vUri, std::vector<std::vector<std::string>>& vres);
 
 private:
 	std::vector<std::string> LoadHttp(const std::smatch& match);

@@ -8,27 +8,12 @@
 class Postgres_manager
 {
 public:
-	Postgres_manager(std::string host, std::string port, std::string dbname, std::string username, std::string password);
-	
+	Postgres_manager(const std::string host, const std::string port, const std::string dbname, const std::string username, const std::string password);
+
 	bool Write(const std::string url, size_t postgres_count, const std::map<std::string, int>& counted_words, long& word_number);
 
-	void SelectTest()
-	{
-		try
-		{
-			pqxx::work tx2{ connection };
-			std::string result = tx2.query_value<std::string>(
-				"SELECT a.first_name FROM actor a where a.actor_id = 3;"
-			);
-			tx2.commit();
-			std::cout << "select query" << std::endl;
-		}
-		catch (const std::exception& e)
-		{
-			std::cout << e.what() << std::endl;
-		}
-	}
-
+	std::vector<std::string> SelectUrls(const std::string& word, const std::string& quantity);
+	
 private:
 	bool Clean();
 	bool CreateTable(std::string tablename, std::string param);

@@ -86,11 +86,19 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 	{
 		pqxx::work tx{ connection };
 		tx.exec_prepared("prepared_insert_document", url);//prepared statement
-		
+		std::string word = "";
 		for (const auto& word_and_quantity : counted_words)
 		{
-			std::string word = word_and_quantity.first;
-			tx.exec_prepared("prepared_insert_word", word);//prepared statement
+			word = word_and_quantity.first;
+			try
+			{
+				tx.exec_prepared("prepared_insert_word", word);//prepared statement
+			}
+			catch (const std::exception& e)
+			{
+				std::cout << "insert error of word: " << word << std::endl;
+				std::cout << e.what() << std::endl;
+			}
 		}
 		tx.commit();
 	}
@@ -127,7 +135,6 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 			//std::string word = word_and_quantity.first;
 			//std::string word_id = std::to_string(word_number++);
 			//std::string quantity = std::to_string();
-
 			tx3.exec_prepared("prepared_insert_documents_words", document_id, word_number++, word_and_quantity.second);//prepared statement
 		}
 		tx3.commit();

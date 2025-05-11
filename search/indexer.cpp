@@ -77,7 +77,7 @@ std::map<std::string, int> Indexer::Count(const std::vector<std::string> &words)
 void Indexer::FilterSymbols(std::vector<std::string> &words)
 {
     std::vector<std::string> filtered_words;
-    std::regex pattern{ "[\"\\.,\\(\\[\\]':\\{\\}]+" }; //не понимает символ правой скобочки )
+    std::regex pattern{ "[\"\\.,\\(\\[\\]':\\{\\}]+" }; //не понимает символ правой скобочки )//@В®©
     std::smatch match;
 
     for (size_t i = 0; i < words.size(); i++)

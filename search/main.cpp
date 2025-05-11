@@ -33,74 +33,6 @@ void PrintConsole(std::vector<std::string> vector)
 boost::asio::io_context iocPage;
 bool working = true;
 
-// исправляет некоторые относительные ссылки в абсолютные
-void AbsLinks(const std::vector<std::string> &init_links, std::vector<std::string> &abs_links)
-{
-	std::smatch mr;
-	std::string host = "";
-	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
-	bool searching_host = true;
-	for (int i = 0; i < init_links.size(); ++i)
-	{
-		std::string sUri = init_links.at(i);
-		//std::cout << "46: " << sUri << std::endl;
-		if (std::regex_search(sUri, regex_pattern) && searching_host)
-		{
-			searching_host = false;
-			int start_search_index = sUri.find("//");
-			//std::cout << "51: " << start_search_index << std::endl;
-			int host_end_index = sUri.find("/", start_search_index + 2);
-			if (host_end_index == -1)
-			{
-				host = sUri;
-			}
-			else
-			{
-				sUri[host_end_index] = '\0';
-				host = sUri;
-			}
-		}
-
-
-
-		if (sUri.find("//") == 0) // относительно протокола
-		{
-			std::regex_search(sUri, mr, std::regex{ "^[^/]+" });
-			sUri = host + sUri;//sUri = mr.str() + sUri;
-			
-		}
-		else if (sUri.find('/') == 0) // относительно имени хоста
-		{
-			std::regex_search(sUri, mr, std::regex{ "^[^/]+//[^/]+" });
-			sUri = host + sUri;//sUri = mr.str() + sUri;
-			
-		}
-		else if (sUri.find("../") == 0) // относительно родительской директории
-		{
-			int ind = std::string::npos;
-			int cnt = (sUri.rfind("../") + 3) / 3;
-			for (int i = 0; i < cnt + 1; ++i)
-			{
-					ind = sUri.rfind('/', ind - 1);
-			}
-			sUri = std::string{ sUri.begin(), sUri.begin() + ind + 1 } + std::string{ sUri.begin() + cnt * 3, sUri.end() };
-			
-		}
-		else if (std::regex_match(sUri, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(sUri, std::regex{ "[^/#?]+" })) // относительно дочерней директории или просто имя файла
-		{
-			int ind = sUri.rfind('/');
-			sUri = std::string{ sUri.begin(), sUri.begin() + ind + 1 } + sUri;
-				
-		}
-
-		std::cout << "AbsLinks: " << sUri << std::endl;
-		if (std::regex_search(sUri, regex_pattern))
-		{
-			abs_links.push_back(sUri);
-		}
-
-	}
-}
 
 void UpdateRecursionLevel(int& number_to_update_recursion, int &recursion_count, const std::atomic_int &pages_count,  const int links_all_size)
 {
@@ -122,17 +54,17 @@ bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr
 		{
 			pages_count++;//this condition means it's bad page so just go next
 		}
+		else if (pages_count + 1 >= pages.size() && links.size() == 0)
+		{
+			std::cout << "Run out of links. The program is stopped" << std::endl;
+			working = false;
+		}
 		if (links.size() > 0)
 		{
 			valid_pages.push_back(std::move(pages.at(pages_count)));
-			
-
-			std::vector<std::string> abs_links;
-			AbsLinks(links, abs_links);
-
-			for (size_t i = 0; i < abs_links.size(); i++)//refactor?
+			for (size_t i = 0; i < links.size(); i++)//refactor?
 			{
-				links_all.push(std::move(abs_links.at(i)));
+				links_all.push(std::move(links.at(i)));
 			}
 			pages_count++;
 			UpdateRecursionLevel(number_to_update_recursion, recursion_count, pages_count, links_all.size());

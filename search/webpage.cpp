@@ -117,7 +117,7 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         http::read(stream, buffer, res);
 
         this->page_text = boost::beast::buffers_to_string(res.body().data());
-        this->vLinks = FindLinks(page_text);
+        AbsLinks(FindLinks(page_text), this->vLinks);
 
 
         boost::system::error_code ec;
@@ -214,106 +214,68 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
 
 
 
-//int Webpage::SimpleHttpRequest()
-//{
-//    try
-//    {
-//        boost::asio::io_context ioc;
-//        boost::asio::ip::tcp::resolver resolver(ioc);
-//        boost::asio::ip::tcp::socket socket(ioc);
-//        boost::asio::connect(socket, resolver.resolve(host, port));
-//        http::request<http::string_body> req(http::verb::get, target, version);
-//        req.set(http::field::host, host);
-//        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-//        http::write(socket, req);
-//
-//        {
-//            boost::beast::flat_buffer buffer;
-//            http::response<http::dynamic_body> res;
-//            http::read(socket, buffer, res);
-//
-//            std::cout << res << std::endl;
-//        }
-//        socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-//
-//    }
-//    catch (const std::exception& e)
-//    {
-//        std::cerr << "Error: " << e.what() << std::endl;
-//        return EXIT_FAILURE;
-//    }
-//
-//    return 0;
-//}
+void Webpage::AbsLinks(const std::vector<std::string>& init_links, std::vector<std::string>& abs_links)
+{
+    std::smatch mr;
+    std::string host = "";
+    std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
+    bool found_host = false;
+    for (int i = 0; i < init_links.size(); ++i)
+    {
+        std::string url = init_links.at(i);
+        if (std::regex_search(url, regex_pattern) && !found_host)
+        {
+            found_host = true;
+            int start_search_index = url.find("//");
+            int host_end_index = url.find("/", start_search_index + 2);
+            if (host_end_index == -1)
+            {
+                host = url;
+            }
+            else
+            {
+                url[host_end_index] = '\0';
+                host = url;
+            }
+        }
 
-//int Webpage::HttpWebSocketRequest()
-//{
-//    try
-//    {
-//        // Check command line arguments.
-//      /*  if (argc != 4)
-//        {
-//            std::cerr <<
-//                "Usage: websocket-client-sync <host> <port> <text>\n" <<
-//                "Example:\n" <<
-//                "    websocket-client-sync echo.websocket.org 80 \"Hello, world!\"\n";
-//            return EXIT_FAILURE;
-//        }*/
-//        //std::string host = argv[1];
-//        //auto const  port = argv[2];
-//        auto const  text = "";
-//
-//        // The io_context is required for all I/O
-//        net::io_context ioc;
-//
-//        // These objects perform our I/O
-//        tcp::resolver resolver{ ioc };
-//        websocket::stream<tcp::socket> ws{ ioc };
-//
-//        // Look up the domain name
-//        auto const results = resolver.resolve(host, port);
-//
-//        // Make the connection on the IP address we get from a lookup
-//        auto ep = net::connect(ws.next_layer(), results);
-//
-//        // Update the host_ string. This will provide the value of the
-//        // Host HTTP header during the WebSocket handshake.
-//        // See https://tools.ietf.org/html/rfc7230#section-5.4
-//        host += ":" +std::to_string(ep.port());//uri - host[":" port]
-//
-//        // Set a decorator to change the User-Agent of the handshake
-//        ws.set_option(websocket::stream_base::decorator(
-//            [](websocket::request_type& req)
-//            {
-//                req.set(http::field::user_agent,
-//                    std::string(BOOST_BEAST_VERSION_STRING) +
-//                    " websocket-client-coro");
-//            }));
-//
-//        // Perform the websocket handshake
-//        ws.handshake(host, "/");
-//
-//        // Send the message
-//        ws.write(net::buffer(std::string(text)));
-//
-//        // This buffer will hold the incoming message
-//        beast::flat_buffer buffer;
-//
-//        // Read a message into our buffer
-//        ws.read(buffer);
-//
-//        // Close the WebSocket connection
-//        ws.close(websocket::close_code::normal);
-//
-//        // If we get here then the connection is closed gracefully
-//
-//        // The make_printable() function helps print a ConstBufferSequence
-//        std::cout << beast::make_printable(buffer.data()) << std::endl;
-//    }
-//    catch (std::exception const& e)
-//    {
-//        std::cerr << "Error: " << e.what() << std::endl;
-//        return EXIT_FAILURE;
-//    }
-//    return EXIT_SUCCESS;
-//}
+
+
+        if (url.find("//") == 0) // относительно протокола
+        {
+            std::regex_search(url, mr, std::regex{ "^[^/]+" });
+            url = host + url;//sUri = mr.str() + sUri;
+
+        }
+        else if (url.find('/') == 0) // относительно имени хоста
+        {
+            std::regex_search(url, mr, std::regex{ "^[^/]+//[^/]+" });
+            url = host + url;//sUri = mr.str() + sUri;
+
+        }
+        else if (url.find("../") == 0) // относительно родительской директории
+        {
+            int ind = std::string::npos;
+            int cnt = (url.rfind("../") + 3) / 3;
+            for (int i = 0; i < cnt + 1; ++i)
+            {
+                ind = url.rfind('/', ind - 1);
+            }
+            url = std::string{ url.begin(), url.begin() + ind + 1 } + std::string{ url.begin() + cnt * 3, url.end() };
+
+        }
+        else if (std::regex_match(url, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(url, std::regex{ "[^/#?]+" })) // относительно дочерней директории или просто имя файла
+        {
+            int ind = url.rfind('/');
+            url = std::string{ url.begin(), url.begin() + ind + 1 } + url;
+
+        }
+
+        std::cout << "AbsLinks: " << url << std::endl;
+        if (std::regex_search(url, regex_pattern))
+        {
+            abs_links.push_back(url);
+        }
+
+    }
+}

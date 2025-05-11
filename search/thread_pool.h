@@ -10,7 +10,7 @@
 class Thread_pool
 {
 public:
-	Thread_pool(size_t pool_size) : prodWork{ boost::asio::make_work_guard(ioc) }
+	Thread_pool(boost::asio::io_context &ioc_, size_t pool_size) : ioc{ ioc_ }, prodWork{ boost::asio::make_work_guard(ioc_) }
 	{
 		for (size_t i = 0; i < pool_size; i++)
 		{
@@ -31,7 +31,7 @@ public:
 	}
 
 private:
-	boost::asio::io_context ioc;
+	boost::asio::io_context &ioc;
 	boost::thread_group threads;
 	boost::asio::executor_work_guard<boost::asio::io_context::executor_type, void, void> prodWork;
 };

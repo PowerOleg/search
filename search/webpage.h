@@ -35,7 +35,7 @@ public:
 	Webpage(Webpage const&) = delete;
 	Webpage& operator=(Webpage const&) = delete;
 
-	Webpage(boost::asio::io_context& ioc_, const std::string url_);
+	Webpage(boost::asio::io_context &ioc_, const std::string url_);
 
 	void LoadPage();
 	std::string GetPageText() { return page_text; };
@@ -61,7 +61,7 @@ private:
 
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::mutex mtx;
-	boost::asio::io_context& ioc;
+	boost::asio::io_context &ioc;
 
 	std::string page_text;
 	std::vector<std::string> vLinks;

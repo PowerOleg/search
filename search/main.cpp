@@ -30,22 +30,28 @@ void PrintConsole(std::vector<std::string> vector)
 }
 
 
-boost::asio::io_context iocPage;
+boost::asio::io_context ioc;
 bool working = true;
+int recursion_count = 0;//отражает текущее значение рекурксии
+int number_to_update_recursion = 1;
 
 
-void UpdateRecursionLevel(int& number_to_update_recursion, int &recursion_count, const std::atomic_int &pages_count,  const int links_all_size)
+
+void UpdateRecursionLevel(const std::vector<std::string> &used_links, const std::vector<std::shared_ptr<Webpage>> &pages)
 {
-	if (number_to_update_recursion >= pages_count)//maybe there is a mistake
+	if (used_links.size() >= number_to_update_recursion && pages.size() > 1)
 	{
-		number_to_update_recursion = links_all_size;
+		int links_counter = 0;
+		for (size_t i = 0; i < pages.size(); i++)
+		{
+			links_counter += pages.at(i)->GetLinks().size();
+		}
+		number_to_update_recursion = links_counter;
 		recursion_count++;
-		//int crawler_depth_int = atoi(crawler_depth.c_str());
-		//crawler_depth = std::to_string(++crawler_depth_int);
 	}
 }
 
-bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages, int &number_to_update_recursion, int &recursion_count)
+bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages)
 {
 	if (links_all.empty())
 	{
@@ -54,21 +60,14 @@ bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr
 		{
 			pages_count++;//this condition means it's bad page so just go next
 		}
-		/*else if (pages_count + 1 >= pages.size() && links.size() == 0)
-		{
-			std::string page_url = pages.at(pages_count)->GetPageUrl();
-			std::cout << "On page " << page_url << " there are no links. The program is stopped" << std::endl;
-			working = false;
-		}*/
 		if (links.size() > 0)
 		{
-			valid_pages.push_back(std::move(pages.at(pages_count)));
-			for (size_t i = 0; i < links.size(); i++)//refactor?
+			valid_pages.push_back(pages.at(pages_count));
+			for (size_t i = 0; i < links.size(); i++)
 			{
-				links_all.push(std::move(links.at(i)));
+				links_all.push(links.at(i));//std::move(links.at(i)));
 			}
 			pages_count++;
-			UpdateRecursionLevel(number_to_update_recursion, recursion_count, pages_count, links_all.size());
 			return true;
 		}
 			return false;
@@ -130,24 +129,19 @@ int main(int argc, char** argv)
 	std::vector<std::shared_ptr<Webpage>> pages;
 	std::vector<std::shared_ptr<Webpage>> valid_pages;
 	std::atomic_int pages_count = 0;
-	int recursion_count = 0;//отражает текущее значение рекурксии
-	int number_to_update_recursion = 1;
+
 	
 	size_t thread_quantity = 2;
-	Thread_pool thread_pool(thread_quantity);
+	Thread_pool thread_pool(ioc, thread_quantity);
 	size_t postgres_count = 0;
 	long word_number = 1L;
 	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
 	
 	while (working)
 	{
-		if (!UpdateLinks(links_all, pages, pages_count, valid_pages, number_to_update_recursion, recursion_count))
+		if (!UpdateLinks(links_all, pages, pages_count, valid_pages))
 		{
 			continue;
-		}
-		if (recursion_count >= atoi(config.crawler_depth.c_str()))//refactor
-		{
-			working = false;
 		}
 
 
@@ -158,7 +152,7 @@ int main(int argc, char** argv)
 			continue;
 		}
 
-		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(iocPage, link);
+		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link);
 		pages.push_back(page);
 		auto page_Load = [&page] { page->LoadPage(); };
 		thread_pool.Enqueue(page_Load);
@@ -166,6 +160,14 @@ int main(int argc, char** argv)
 		if (valid_pages.size() > postgres_count)
 		{
 			WriteWordsInDatabase(postgres, valid_pages, postgres_count, config, word_number);
+		}
+
+
+
+		UpdateRecursionLevel(used_links, pages);
+		if (recursion_count >= atoi(config.crawler_depth.c_str()))
+		{
+			working = false;
 		}
 	}
 

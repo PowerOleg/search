@@ -75,7 +75,6 @@ bool Postgres_manager::InitTables()
 bool Postgres_manager::Write(const std::string url, size_t postgres_count, const std::map<std::string, int>& counted_words, long& word_number)
 {
 	bool result = false;
-	//std::vector<std::string> words;
 	if (url.length() > 255)
 	{
 		std::cout << "Ошибка! url длиннее 255 символов";
@@ -96,7 +95,7 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 			}
 			catch (const std::exception& e)
 			{
-				std::cout << "insert error of word: " << word << std::endl;
+				std::cout << "error while inserting of word: " << word << std::endl;
 				std::cout << e.what() << std::endl;
 			}
 		}

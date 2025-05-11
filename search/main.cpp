@@ -54,11 +54,12 @@ bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr
 		{
 			pages_count++;//this condition means it's bad page so just go next
 		}
-		else if (pages_count + 1 >= pages.size() && links.size() == 0)
+		/*else if (pages_count + 1 >= pages.size() && links.size() == 0)
 		{
-			std::cout << "Run out of links. The program is stopped" << std::endl;
+			std::string page_url = pages.at(pages_count)->GetPageUrl();
+			std::cout << "On page " << page_url << " there are no links. The program is stopped" << std::endl;
 			working = false;
-		}
+		}*/
 		if (links.size() > 0)
 		{
 			valid_pages.push_back(std::move(pages.at(pages_count)));
@@ -101,8 +102,6 @@ void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_pt
 	std::string page_text = page1->GetPageText();
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
-	//page1->MoveWords(std::move(words));
-	//std::vector<std::string> words1 = page1->GetWords();
 	page_indexer.FilterSymbols(words);
 	std::map<std::string, int> counted_words = page_indexer.Count(std::move(words));
 	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);

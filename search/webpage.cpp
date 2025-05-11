@@ -117,8 +117,10 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         http::read(stream, buffer, res);
 
         this->page_text = boost::beast::buffers_to_string(res.body().data());
-        AbsLinks(FindLinks(page_text), this->vLinks);
-
+        std::vector<std::string> abs_links;
+        AbsLinks(FindLinks(page_text), abs_links);
+        this->vLinks = std::move(abs_links);
+        std::cout << "The page: " << url << " has " << this->vLinks.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         stream.shutdown(ec);
@@ -214,7 +216,7 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
 
 
 
-void Webpage::AbsLinks(const std::vector<std::string>& init_links, std::vector<std::string>& abs_links)
+void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<std::string> &abs_links)
 {
     std::smatch mr;
     std::string host = "";
@@ -271,7 +273,7 @@ void Webpage::AbsLinks(const std::vector<std::string>& init_links, std::vector<s
 
         }
 
-        std::cout << "AbsLinks: " << url << std::endl;
+        //std::cout << "AbsLinks: " << url << std::endl;
         if (std::regex_search(url, regex_pattern))
         {
             abs_links.push_back(url);

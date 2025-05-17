@@ -81,7 +81,7 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 	ret_flag = 1;
 	std::string link = links_all.front();
 	links_all.pop();
-	std::cout << "links_all size: " << links_all.size() << std::endl;
+	std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
 	std::chrono::milliseconds timespan(100);
 	std::this_thread::sleep_for(timespan);
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
@@ -144,7 +144,6 @@ int main(int argc, char** argv)
 			continue;
 		}
 
-
 		int return_flag;
 		std::string link = GetLink(links_all, used_links, return_flag);
 		if (return_flag == 3)
@@ -161,8 +160,6 @@ int main(int argc, char** argv)
 		{
 			WriteWordsInDatabase(postgres, valid_pages, postgres_count, config, word_number);
 		}
-
-
 
 		UpdateRecursionLevel(used_links, pages);
 		if (recursion_count >= atoi(config.crawler_depth.c_str()))

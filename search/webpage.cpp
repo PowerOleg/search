@@ -12,7 +12,7 @@ Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_) : ioc{ ioc_ },
 void Webpage::LoadPage()
 {
     std::smatch match;
-    std::cout << "regex_match: " << this->url << std::endl;
+    //std::cout << "regex_match: " << this->url << std::endl;
     std::chrono::milliseconds timespan(100);
     std::this_thread::sleep_for(timespan);
     if (std::regex_match(this->url, match, regex_pattern))
@@ -66,7 +66,11 @@ std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
         http::read(socket, buffer, res);
 
         this->page_text = boost::beast::buffers_to_string(res.body().data());
-        this->vLinks = FindLinks(page_text);
+        std::vector<std::string> abs_links;
+        std::vector<std::string> links = FindLinks(page_text);
+        AbsLinks(links, abs_links);
+        this->vLinks = std::move(abs_links);
+        std::cout << "72The page: " << url << " has " << this->vLinks.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         socket.shutdown(tcp::socket::shutdown_both, ec);
@@ -118,9 +122,10 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
 
         this->page_text = boost::beast::buffers_to_string(res.body().data());
         std::vector<std::string> abs_links;
-        AbsLinks(FindLinks(page_text), abs_links);
+        std::vector<std::string> links = FindLinks(page_text);
+        AbsLinks(std::move(links), abs_links);
         this->vLinks = std::move(abs_links);
-        std::cout << "The page: " << url << " has " << this->vLinks.size() << " links" << std::endl;
+        std::cout << "126The page: " << url << " has " << this->vLinks.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         stream.shutdown(ec);
@@ -145,7 +150,8 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
 
 std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
 {
-    std::vector<std::string> vLinks;
+    std::cout << "        start searching links in " << url << std::endl;
+    std::vector<std::string> links_vector;
 
     GumboAttribute* hrefBase = nullptr;
     GumboOutput* output = gumbo_parse(sBody.c_str());
@@ -160,21 +166,24 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
         if (GUMBO_NODE_ELEMENT == node->type)
         {
             GumboAttribute* href = nullptr;
-            if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href")))
+            GumboVector* attributes = &node->v.element.attributes;
+            //std::cout << "attribute: " << attribute->getText() << std::endl;
+            if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(attributes, "href")))
             {
                 std::string sLnk{ href->value };
                 if (!sLnk.empty())
                 {
-                    vLinks.emplace_back(href->value);
+                    links_vector.emplace_back(href->value);
                 }
             }
-            else if (node->v.element.tag == GUMBO_TAG_BASE && (hrefBase = gumbo_get_attribute(&node->v.element.attributes, "href")))
+            else if (node->v.element.tag == GUMBO_TAG_BASE && (hrefBase = gumbo_get_attribute(attributes, "href")))
             {
+                //std::cout << "strange behaviour. check this line 178" << std::endl;
             }
-            GumboVector* children = &node->v.element.children;
-            for (unsigned int i = 0; i < children->length; ++i)
+
+            for (unsigned int i = 0; i < attributes->length; ++i)
             {
-                qn.push(static_cast<GumboNode*>(children->data[i]));
+                qn.push(static_cast<GumboNode*>(attributes->data[i]));
             }
         }
     }
@@ -190,7 +199,7 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
         {
             sBase.pop_back();
         }
-        for (auto& sLnk : vLinks)
+        for (auto& sLnk : links_vector)
         {
             if (std::regex_match(sLnk, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(sLnk, std::regex{ "[^/#?]+" })) // относительно дочерней или текущей директории
             {
@@ -211,7 +220,7 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
     }
 
     gumbo_destroy_output(&kGumboDefaultOptions, output);
-    return vLinks;
+    return links_vector;
 }
 
 
@@ -268,9 +277,10 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
         }
         else if (std::regex_match(url, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(url, std::regex{ "[^/#?]+" })) // относительно дочерней директории или просто имя файла
         {
+            std::cout << "271" << std::endl;
             int ind = url.rfind('/');
             url = std::string{ url.begin(), url.begin() + ind + 1 } + url;
-
+            std::cout << "274" << std::endl;
         }
 
         //std::cout << "AbsLinks: " << url << std::endl;

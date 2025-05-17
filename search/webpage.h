@@ -39,7 +39,7 @@ public:
 
 	void LoadPage();
 	std::string GetPageText() { return page_text; };
-	std::vector<std::string> GetLinks() { return vLinks; };
+	std::vector<std::string> GetLinks() { return page_links; };
 	void MoveWords(std::vector<std::string>&& words_) { this->words = std::move(words_); };
 	std::vector<std::string> GetWords() { return words; };
 	std::string GetPageUrl() { return url; };
@@ -64,7 +64,7 @@ private:
 	boost::asio::io_context &ioc;
 
 	std::string page_text;
-	std::vector<std::string> vLinks;
+	std::vector<std::string> page_links;
 	std::vector<std::string> words;
 	bool is_valid_page = false;
 };

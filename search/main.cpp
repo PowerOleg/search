@@ -81,7 +81,6 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 	ret_flag = 1;
 	std::string link = links_all.front();
 	links_all.pop();
-	std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
 	std::chrono::milliseconds timespan(100);
 	std::this_thread::sleep_for(timespan);
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
@@ -146,11 +145,12 @@ int main(int argc, char** argv)
 
 		int return_flag;
 		std::string link = GetLink(links_all, used_links, return_flag);
+		std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
 		if (return_flag == 3)
 		{
 			continue;
 		}
-
+		
 		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link);
 		pages.push_back(page);
 		auto page_Load = [&page] { page->LoadPage(); };

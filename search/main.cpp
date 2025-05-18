@@ -85,6 +85,7 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 	std::this_thread::sleep_for(timespan);
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::smatch match;
+	std::cout << "88links_all size: " << links_all.size() << " link: " << link << std::endl;
 	if (link == "" || !std::regex_match(link, match, regex_pattern))
 	{
 		ret_flag = 3; 
@@ -145,7 +146,6 @@ int main(int argc, char** argv)
 
 		int return_flag;
 		std::string link = GetLink(links_all, used_links, return_flag);
-		//std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
 		if (return_flag == 3)
 		{
 			continue;

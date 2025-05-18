@@ -71,7 +71,7 @@ std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
         std::vector<std::string> links = FindLinks(page_text);
         AbsLinks(links, abs_links);
         this->page_links = std::move(abs_links);
-        //std::cout << "ProcessingPage73: " << url << " has " << this->page_links.size() << " links" << std::endl;
+        std::cout << "74ProcessingPage: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         socket.shutdown(tcp::socket::shutdown_both, ec);
@@ -120,13 +120,14 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         boost::beast::flat_buffer buffer;
         http::response<http::dynamic_body> res;
         http::read(stream, buffer, res);
-
+        std::cout << "123ProcessingPageSTART: " << url << std::endl;
         this->page_text = boost::beast::buffers_to_string(res.body().data());
         std::vector<std::string> abs_links;
         std::vector<std::string> links_temp = FindLinks(page_text);
+        std::cout << "127ProcessingPageSTART: " << url << std::endl;
         AbsLinks(std::move(links_temp), abs_links);
         this->page_links = std::move(abs_links);
-        //std::cout << "ProcessingPage128: " << url << " has " << this->page_links.size() << " links" << std::endl;
+        std::cout << "130ProcessingPageDONE: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         stream.shutdown(ec);
@@ -241,24 +242,25 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
     for (int i = 0; i < init_links.size(); ++i)
     {
         std::string link = init_links.at(i);
+        std::cout << "245link : " << link << std::endl;
         if (link == "" || link.find("/") == -1)
         {
             std::cout << "Wrong link to make absolute: " << link << std::endl;
             continue;
         }
 
-        std::cout << "250: " << link << std::endl;
+        std::cout << "252: " << link << std::endl;
         if (link.find("//") == 0) // относительно протокола
         {
             std::regex_search(link, mr, std::regex{ "^[^/]+" });
-            std::cout << "254: " << link << std::endl;
+            std::cout << "256: " << link << std::endl;
             link = hostname + link;//sUri = mr.str() + sUri;
 
         }
         else if (link.find('/') == 0) // относительно имени хоста
         {
             std::regex_search(link, mr, std::regex{ "^[^/]+//[^/]+" });
-            std::cout << "261: " << link << std::endl;
+            std::cout << "263: " << link << std::endl;
             link = hostname + link;//sUri = mr.str() + sUri;
 
         }
@@ -271,19 +273,19 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
                 ind = link.rfind('/', ind - 1);
             }
             link = std::string{ link.begin(), link.begin() + ind + 1 } + std::string{ link.begin() + cnt * 3, link.end() };
-            std::cout << "274: " << link << std::endl;
+            std::cout << "276: " << link << std::endl;
 
         }
         else if (std::regex_match(link, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(link, std::regex{ "[^/#?]+" })) // относительно дочерней директории или просто имя файла
         {
-            std::cout << "279: " << link << std::endl;
+            std::cout << "281: " << link << std::endl;
             int ind = link.rfind('/');
             link = std::string{ link.begin(), link.begin() + ind + 1 } + link;
-            std::cout << "282: " << link << std::endl;
-            std::cout << "283" << std::endl;
+            std::cout << "284: " << link << std::endl;
+            std::cout << "285" << std::endl;
         }
 
-        std::cout << "286: " << link << std::endl;
+        std::cout << "288: " << link << std::endl;
         if (std::regex_search(link, regex_pattern))
         {
             abs_links.push_back(link);
@@ -291,12 +293,3 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
 
     }
 }
-
-//void Webpage::IsCorrectHost(std::string& link, std::string& host, bool& found_host)
-//{
-//    if (this->url.find(link) != std::string::npos)
-//    {
-//        host = link;
-//        found_host = true;
-//    }
-//}

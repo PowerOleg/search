@@ -72,7 +72,7 @@ bool Postgres_manager::InitTables()
 	return result;
 }
 
-bool Postgres_manager::Write(const std::string url, size_t postgres_count, const std::map<std::string, int>& counted_words, long& word_number)
+bool Postgres_manager::Write(const std::string url, size_t postgres_count, const std::map<std::string, int>& new_words, long& word_number)
 {
 	bool result = false;
 	if (url.length() > 255)
@@ -81,17 +81,32 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 		return false;
 	}
 
+	std::string	document_id = "";
+	//std::map<std::string, std::string> word_and_id;//key=word, value=id
+	std::vector<std::string> all_words;
+	std::vector<std::string> all_words_id;
 	try
 	{
-		pqxx::work tx{ connection };
-		tx.exec_prepared("prepared_insert_document", url);//prepared statement
+		if (postgres_count > 1)
+		{
+			pqxx::work tx0{ connection };
+			this->last_word_id_last_iteration = tx0.query_value<std::string>(
+				"select id from words where id = (select max(id) from words);"
+			);
+			tx0.commit();
+		}
+
+
+
+		pqxx::work tx1{ connection };
+		tx1.exec_prepared("prepared_insert_document", url);//prepared statement
 		std::string word = "";
-		for (const auto& word_and_quantity : counted_words)
+		for (const auto& word_and_quantity : new_words)
 		{
 			word = word_and_quantity.first;
 			try
 			{
-				tx.exec_prepared("prepared_insert_word", word);//prepared statement
+				tx1.exec_prepared("prepared_insert_word", word);//prepared statement
 			}
 			catch (const std::exception& e)
 			{
@@ -99,49 +114,70 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 				std::cout << e.what() << std::endl;
 			}
 		}
-		tx.commit();
+		tx1.commit();
+
+
+
+		pqxx::work tx2{ connection };
+		document_id = tx2.query_value<std::string>(
+				"SELECT d.id FROM documents d where d.document = \'" + url + "\';"
+			);
+		tx2.commit();
+
+
+
+		pqxx::work tx3{ connection };
+		auto sql_words_table = tx3.query<std::string, std::string>(
+			"SELECT w.id, w.word FROM words w;"
+		);
+		tx3.commit();
+
+		for (const std::tuple<std::string, std::string>& value : sql_words_table)//refactor cause no need to create additional vectors
+		{
+			all_words_id.push_back(std::get<0>(value));
+			all_words.push_back(std::get<1>(value));
+		}
+
+
+		pqxx::work tx4{ connection };
+		std::cout << "Writing to the database. document_id: " << document_id << std::endl;
+		for (const auto& new_word_and_quantity : new_words)
+		{
+			std::vector<std::string>::iterator vector_it = std::find(all_words.begin(), all_words.end(), new_word_and_quantity.first);
+			size_t index = std::distance(all_words.begin(), vector_it);
+			if (index >= 0)
+			{
+				bool compare = all_words_id.at(index).compare(this->last_word_id_last_iteration) > 0;
+				//std::cout << "1: " << all_words_id.at(index) << std::endl;
+				//std::cout << "2: " << this->last_word_id_last_iteration << std::endl;
+				//std::cout << "result: " << compare << std::endl;
+				if (compare)
+				{
+					tx4.exec_prepared("prepared_insert_documents_words", document_id, all_words_id.at(index), new_word_and_quantity.second);//prepared statement
+				}
+
+			}
+			
+		}
+		tx4.commit();
+		result = true;
 	}
 	catch (const std::exception& e)
 	{
-		std::cout << e.what() << std::endl;
+		std::cout << std::endl;
+		std::cout << e.what() << std::endl << std::endl;
 	}
 
-	//std::string document_id = "";
-	//try
-	//{
-	//	pqxx::work tx2{ connection };
-	//	document_id = tx2.query_value<std::string>(
-	//		"SELECT d.id FROM documents d where d.document = " + url + ";"
-	//	);
-	//	tx2.commit();
-	//	std::cout << "select query" << std::endl;
-	//}
-	//catch (const std::exception& e)
-	//{
-	//	std::cout << e.what() << std::endl;
-	//}
-	//std::cout << "document_id: " << document_id << std::endl;
 
+//	//std::string document_id = std::to_string(postgres_count);
 
-	std::string document_id = std::to_string(postgres_count);
-	std::cout << "document_id: " << document_id << std::endl;
-	try
-	{
-		pqxx::work tx3{ connection };
-		
-		for (const auto& word_and_quantity : counted_words)
-		{
-			//std::string word = word_and_quantity.first;
-			//std::string word_id = std::to_string(word_number++);
-			//std::string quantity = std::to_string();
-			tx3.exec_prepared("prepared_insert_documents_words", document_id, word_number++, word_and_quantity.second);//prepared statement
-		}
-		tx3.commit();
-		result = true;
-}
-catch (const std::exception& e)
-{
-	std::cout << e.what() << std::endl;
-}
+//	try
+//	{
+//		
+//}
+//catch (const std::exception& e)
+//{
+//	std::cout << e.what() << std::endl;
+//}
 	return result;
 }

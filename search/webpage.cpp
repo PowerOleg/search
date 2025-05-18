@@ -12,9 +12,10 @@ Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_) : ioc{ ioc_ },
 void Webpage::LoadPage()
 {
     std::smatch match;
-    //std::cout << "regex_match: " << this->url << std::endl;
+    std::cout << "15regex_match: " << this->url << std::endl;
     std::chrono::milliseconds timespan(100);
     std::this_thread::sleep_for(timespan);
+
     if (std::regex_match(this->url, match, regex_pattern))
     {
         if (match[1].str() == "http")
@@ -70,7 +71,7 @@ std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
         std::vector<std::string> links = FindLinks(page_text);
         AbsLinks(links, abs_links);
         this->page_links = std::move(abs_links);
-        std::cout << "ProcessingPage73: " << url << " has " << this->page_links.size() << " links" << std::endl;
+        //std::cout << "ProcessingPage73: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         socket.shutdown(tcp::socket::shutdown_both, ec);
@@ -125,7 +126,7 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         std::vector<std::string> links_temp = FindLinks(page_text);
         AbsLinks(std::move(links_temp), abs_links);
         this->page_links = std::move(abs_links);
-        std::cout << "ProcessingPage128: " << url << " has " << this->page_links.size() << " links" << std::endl;
+        //std::cout << "ProcessingPage128: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         stream.shutdown(ec);
@@ -197,6 +198,7 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
         }
         for (auto& sLnk : vLinks)
         {
+            std::cout << "201sLnk: " << sLnk << " sBase: " << sBase << "\n\n";
             if (std::regex_match(sLnk, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(sLnk, std::regex{ "[^/#?]+" })) // относительно дочерней или текущей директории
             {
                 sLnk = sBase + '/' + sLnk;
@@ -228,7 +230,12 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
     int start_search_index = this->url.find("//");
     int host_end_index = this->url.find("/", start_search_index + 2);
     std::string hostname = this->url;
-    hostname[host_end_index] = '\0';
+    if (host_end_index > 0)
+    {
+        hostname = hostname.substr(0, host_end_index);
+    }
+
+
     std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
     bool found_host = false;
     for (int i = 0; i < init_links.size(); ++i)
@@ -236,19 +243,22 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
         std::string link = init_links.at(i);
         if (link == "" || link.find("/") == -1)
         {
-            std::cout << "239Wrong link to make absolute: " << link << std::endl;
+            std::cout << "Wrong link to make absolute: " << link << std::endl;
             continue;
         }
 
+        std::cout << "250: " << link << std::endl;
         if (link.find("//") == 0) // относительно протокола
         {
             std::regex_search(link, mr, std::regex{ "^[^/]+" });
+            std::cout << "254: " << link << std::endl;
             link = hostname + link;//sUri = mr.str() + sUri;
 
         }
         else if (link.find('/') == 0) // относительно имени хоста
         {
             std::regex_search(link, mr, std::regex{ "^[^/]+//[^/]+" });
+            std::cout << "261: " << link << std::endl;
             link = hostname + link;//sUri = mr.str() + sUri;
 
         }
@@ -261,16 +271,19 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
                 ind = link.rfind('/', ind - 1);
             }
             link = std::string{ link.begin(), link.begin() + ind + 1 } + std::string{ link.begin() + cnt * 3, link.end() };
+            std::cout << "274: " << link << std::endl;
 
         }
         else if (std::regex_match(link, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(link, std::regex{ "[^/#?]+" })) // относительно дочерней директории или просто имя файла
         {
-            std::cout << "285: " << link << std::endl;
+            std::cout << "279: " << link << std::endl;
             int ind = link.rfind('/');
             link = std::string{ link.begin(), link.begin() + ind + 1 } + link;
-            std::cout << "288" << std::endl;
+            std::cout << "282: " << link << std::endl;
+            std::cout << "283" << std::endl;
         }
 
+        std::cout << "286: " << link << std::endl;
         if (std::regex_search(link, regex_pattern))
         {
             abs_links.push_back(link);

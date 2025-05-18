@@ -58,7 +58,7 @@ bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr
 		std::vector<std::string> links = pages.at(pages_count)->GetLinks();
 		if (pages_count + 1 < pages.size() && links.size() == 0)
 		{
-			pages_count++;//this condition means it's bad page so just go next
+			pages_count++;//this condition means it's bad page so just go to next page
 		}
 		if (links.size() > 0)
 		{
@@ -81,7 +81,7 @@ std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string>
 	ret_flag = 1;
 	std::string link = links_all.front();
 	links_all.pop();
-	std::chrono::milliseconds timespan(100);
+	std::chrono::milliseconds timespan(50);
 	std::this_thread::sleep_for(timespan);
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::smatch match;
@@ -101,7 +101,7 @@ void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_pt
 	Indexer page_indexer(page_text);
 	std::vector<std::string> words = page_indexer.getWords();
 	page_indexer.FilterSymbols(words);
-	std::map<std::string, int> counted_words = page_indexer.Count(std::move(words));
+	std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
 	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
 }
 
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 
 		int return_flag;
 		std::string link = GetLink(links_all, used_links, return_flag);
-		std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
+		//std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
 		if (return_flag == 3)
 		{
 			continue;

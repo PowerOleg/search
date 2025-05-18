@@ -19,5 +19,7 @@ private:
 	bool CreateTable(std::string tablename, std::string param);
 	bool InitTables();
 	pqxx::connection connection;
+
+	std::string last_word_id_last_iteration = "0";
 };
 

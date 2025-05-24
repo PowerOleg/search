@@ -1,13 +1,18 @@
 ﻿#include <boost/asio/io_context.hpp>
 #include <memory>
+#include <thread>
+#include <mutex>
 #include <string>
 #include "webpage.h"
 #include "postgres_manager.h"
 #include "indexer.h"
 #include "file_manager.h"
 #include "thread_pool.h"
+#include "link.h"
 
 #pragma execution_character_set("utf-8")
+
+using namespace crawler;
 
 struct Config
 {
@@ -34,66 +39,66 @@ boost::asio::io_context ioc;
 bool working = true;
 int recursion_count = 0;//отражает текущее значение рекурксии
 int number_to_update_recursion = 1;
+std::mutex m;
 
 
+//void UpdateRecursionLevel(const std::vector<std::string> &used_links, const std::vector<std::shared_ptr<Webpage>> &pages)
+//{
+//	if (used_links.size() >= number_to_update_recursion && pages.size() > 1)
+//	{
+//		int links_counter = 0;
+//		for (size_t i = 0; i < pages.size(); i++)
+//		{
+//			links_counter += pages.at(i)->GetLinks().size();
+//		}
+//		number_to_update_recursion = links_counter;
+//		recursion_count++;
+//	}
+//}
 
-void UpdateRecursionLevel(const std::vector<std::string> &used_links, const std::vector<std::shared_ptr<Webpage>> &pages)
-{
-	if (used_links.size() >= number_to_update_recursion && pages.size() > 1)
-	{
-		int links_counter = 0;
-		for (size_t i = 0; i < pages.size(); i++)
-		{
-			links_counter += pages.at(i)->GetLinks().size();
-		}
-		number_to_update_recursion = links_counter;
-		recursion_count++;
-	}
-}
-
-bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages)
-{
-	if (links_all.empty())
-	{
-		std::vector<std::string> links = pages.at(pages_count)->GetLinks();
-		if (pages_count + 1 < pages.size() && links.size() == 0)
-		{
-			pages_count++;//this condition means it's bad page so just go to next page
-		}
-		if (links.size() > 0)
-		{
-			valid_pages.push_back(pages.at(pages_count));
-			for (size_t i = 0; i < links.size(); i++)
-			{
-				links_all.push(links.at(i));//std::move(links.at(i)));
-			}
-			pages_count++;
-			return true;
-		}
-			return false;
-	}
-	return true;
-}
+//bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages)
+//{
+//	if (links_all.empty())
+//	{
+//		std::vector<std::string> links = pages.at(pages_count)->GetLinks();
+//		if (pages_count + 1 < pages.size() && links.size() == 0)
+//		{
+//			pages_count++;//this condition means it's bad page so just go to next page
+//		}
+//		if (links.size() > 0)
+//		{
+//			valid_pages.push_back(pages.at(pages_count));
+//			for (size_t i = 0; i < links.size(); i++)
+//			{
+//				links_all.push(links.at(i));//std::move(links.at(i)));
+//			}
+//			pages_count++;
+//			return true;
+//		}
+//			return false;
+//	}
+//	return true;
+//}
 
 
-std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string> &used_links, int &ret_flag)
-{
-	ret_flag = 1;
-	std::string link = links_all.front();
-	links_all.pop();
-	std::chrono::milliseconds timespan(50);
-	std::this_thread::sleep_for(timespan);
-	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
-	std::smatch match;
-	std::cout << "88links_all size: " << links_all.size() << " link: " << link << std::endl;
-	if (link == "" || !std::regex_match(link, match, regex_pattern))
-	{
-		ret_flag = 3; 
-		return link;
-	}
-	used_links.push_back(link);
-	return link;
-}
+//std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string> &used_links, int &ret_flag)
+//{
+//	ret_flag = 1;
+//	std::string link = links_all.front();
+//	links_all.pop();
+//	std::chrono::milliseconds timespan(50);
+//	std::this_thread::sleep_for(timespan);
+//	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
+//	std::smatch match;
+//	std::cout << "88links_all size: " << links_all.size() << " link: " << link << std::endl;
+//	if (link == "" || !std::regex_match(link, match, regex_pattern))
+//	{
+//		ret_flag = 3; 
+//		return link;
+//	}
+//	used_links.push_back(link);
+//	return link;
+//}
 
 void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config, long &word_number)
 {
@@ -106,10 +111,20 @@ void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_pt
 	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
 }
 
+std::shared_ptr<Link> GetLinkFromQueue(std::queue<std::shared_ptr<Link>> &links_all)
+{
+	std::scoped_lock lock(m);
+	std::string link{ links_all.front() };
+	links_all.pop();
+	return link;
+}
+
 int main(int argc, char** argv)
 {
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
+
+	Link;
 
 	Config config;
 	File_manager file_manager("config.ini");
@@ -123,9 +138,10 @@ int main(int argc, char** argv)
 		&config.crawler_depth,
 		&config.http_port);
 	
-	std::queue<std::string> links_all;
+	std::queue<std::shared_ptr<Link>> links_all;
 	std::vector<std::string> used_links;//для отработанных ссылок
-	links_all.push(config.url);//начальная ссылка
+	
+	links_all.push(std::make_shared<Link>(config.url, 1));//начальная ссылка
 	std::vector<std::shared_ptr<Webpage>> pages;
 	std::vector<std::shared_ptr<Webpage>> valid_pages;
 	std::atomic_int pages_count = 0;
@@ -138,6 +154,30 @@ int main(int argc, char** argv)
 	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
 	
 	while (working)
+	{
+		if (links_all.size() > 0)
+		{
+			Link link = GetLinkFromQueue(links_all);
+			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link, m);
+			
+			if (page == nullptr)
+			{
+				std::cout << "page == nullptr. link: " << link << std::endl;
+				break;
+			}
+			pages.push_back(page);
+			auto page_Load = [&page, &links_all] { page->LoadPage(links_all); };
+			thread_pool.Enqueue(page_Load);
+
+
+
+
+		}
+
+	}
+
+
+	/*while (working)
 	{
 		if (!UpdateLinks(links_all, pages, pages_count, valid_pages))
 		{
@@ -166,7 +206,7 @@ int main(int argc, char** argv)
 		{
 			working = false;
 		}
-	}
+	}*/
 
 	return 0;
 }

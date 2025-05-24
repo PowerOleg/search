@@ -1,6 +1,6 @@
 #include "webpage.h"
 
-Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_) : ioc{ ioc_ },  url(url_)
+Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_, std::mutex &m_) : ioc{ ioc_ }, url{ url_ }, m{ m_ }
 {
     //this->url = "https://mail.ru/";
     //boost::asio::io_context ioc_;
@@ -9,23 +9,25 @@ Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_) : ioc{ ioc_ },
 
 
 
-void Webpage::LoadPage()
+void Webpage::LoadPage(std::queue<std::string> &links_all)
 {
     std::smatch match;
     std::cout << "15regex_match: " << this->url << std::endl;
-    std::chrono::milliseconds timespan(100);
-    std::this_thread::sleep_for(timespan);
+    //std::chrono::milliseconds timespan(100);
+    //std::this_thread::sleep_for(timespan);
 
     if (std::regex_match(this->url, match, regex_pattern))
     {
+        std::queue<std::string> temp_links;
         if (match[1].str() == "http")
         {
-            LoadHttp(match);
+            temp_links = LoadHttp(match);
         }
         else
         {
-            LoadHttps(match);
+            temp_links = LoadHttps(match);
         }
+        PushQueue(temp_links, links_all);
     }
     else
     {
@@ -33,6 +35,16 @@ void Webpage::LoadPage()
             std::lock_guard<std::mutex> lg{ mtx };
             std::cerr << "Error!!!LoadPage() std::regex_match() failed: " + url << "\nThis is not an url\n";
         }
+    }
+}
+
+void Webpage::PushQueue(std::queue<std::string> &source, std::queue<std::string> &destination)
+{
+    std::scoped_lock lock(this->m);
+    while (!source.empty())
+    {
+        destination.push(std::move(source.front()));
+        source.pop();
     }
 }
 
@@ -46,9 +58,10 @@ void Webpage::SetValid()
     this->is_valid_page = true;
 }
 
-std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
+std::queue<std::string> Webpage::LoadHttp(const std::smatch& match)
 {
     std::vector<std::string> vLinks;
+    std::queue<std::string> abs_links;
     try {
         const std::string target = (match[3].length() == 0 ? "/" : match[3].str());
         int version = 11;
@@ -67,10 +80,10 @@ std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
         http::read(socket, buffer, res);
 
         this->page_text = boost::beast::buffers_to_string(res.body().data());
-        std::vector<std::string> abs_links;
+        
         std::vector<std::string> links = FindLinks(page_text);
         AbsLinks(links, abs_links);
-        this->page_links = std::move(abs_links);
+        //this->page_links = std::move(abs_links);
         std::cout << "74ProcessingPage: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
@@ -86,12 +99,13 @@ std::vector<std::string> Webpage::LoadHttp(const std::smatch& match)
             std::cerr << "loadHttp(): " << e.what() << std::endl;
         }
     }
-    return vLinks;
+    return abs_links;
 }
 
-std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
+std::queue<std::string> Webpage::LoadHttps(std::smatch const& match)
 {
     std::vector<std::string> vLinks;
+    std::queue<std::string> abs_links;
     try {
 
         std::string const host = match[2];
@@ -122,11 +136,11 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
         http::read(stream, buffer, res);
         std::cout << "123ProcessingPageSTART: " << url << std::endl;
         this->page_text = boost::beast::buffers_to_string(res.body().data());
-        std::vector<std::string> abs_links;
+        
         std::vector<std::string> links_temp = FindLinks(page_text);
         std::cout << "127ProcessingPageSTART: " << url << std::endl;
         AbsLinks(std::move(links_temp), abs_links);
-        this->page_links = std::move(abs_links);
+        //this->page_links = std::move(abs_links);
         std::cout << "130ProcessingPageDONE: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
@@ -147,7 +161,7 @@ std::vector<std::string> Webpage::LoadHttps(std::smatch const& match)
             std::cerr << "loadHttps(): " << e.what() << std::endl;
         }
     }
-    return vLinks;
+    return abs_links;
 }
 
 std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
@@ -224,7 +238,7 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
 
 
 
-void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<std::string> &abs_links)
+void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<std::string> &abs_links)
 {
     std::smatch mr;
     
@@ -288,7 +302,7 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::vector<s
         std::cout << "288: " << link << std::endl;
         if (std::regex_search(link, regex_pattern))
         {
-            abs_links.push_back(link);
+            abs_links.push(link);
         }
 
     }

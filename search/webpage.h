@@ -35,9 +35,9 @@ public:
 	Webpage(Webpage const&) = delete;
 	Webpage& operator=(Webpage const&) = delete;
 
-	Webpage(boost::asio::io_context &ioc_, const std::string url_);
+	Webpage(boost::asio::io_context &ioc_, const std::string url_, std::mutex &m_);
 
-	void LoadPage();
+	void LoadPage(std::queue<std::string> &links_all);
 	std::string GetPageText() { return page_text; };
 	std::vector<std::string> GetLinks() { return page_links; };
 	void MoveWords(std::vector<std::string>&& words_) { this->words = std::move(words_); };
@@ -47,10 +47,11 @@ public:
 	void SetValid();
 
 private:
-	std::vector<std::string> LoadHttp(const std::smatch& match);
-	std::vector<std::string> LoadHttps(std::smatch const& match);
+	std::queue<std::string> LoadHttp(const std::smatch& match);
+	std::queue<std::string> LoadHttps(std::smatch const& match);
 	std::vector<std::string> FindLinks(std::string const& sBody);
-	void AbsLinks(const std::vector<std::string>& init_links, std::vector<std::string>& abs_links);
+	void AbsLinks(const std::vector<std::string>& init_links, std::queue<std::string> &abs_links);
+	void PushQueue(std::queue<std::string> &source, std::queue<std::string> &destination);
 
 private:
 	std::string url;
@@ -67,5 +68,6 @@ private:
 	std::vector<std::string> page_links;
 	std::vector<std::string> words;
 	bool is_valid_page = false;
+	std::mutex &m;
 };
 

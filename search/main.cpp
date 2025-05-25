@@ -137,14 +137,9 @@ int main(int argc, char** argv)
 		&config.http_port);
 	
 	std::queue<std::shared_ptr<Link>> links_all;
-	//std::vector<std::string> used_links;//для отработанных ссылок
-	
 	links_all.push(std::make_shared<Link>(config.url, 1));//начальная ссылка
-	std::vector<std::shared_ptr<Webpage>> pages;
-	//std::vector<std::shared_ptr<Webpage>> valid_pages;
-	//std::atomic_int pages_count = 0;
 
-	
+	std::vector<std::shared_ptr<Webpage>> pages;
 	size_t thread_quantity = 2;
 	Thread_pool thread_pool(ioc, thread_quantity);
 	size_t postgres_count = 0;
@@ -165,15 +160,12 @@ int main(int argc, char** argv)
 			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, m, link->recursion_level);
 			if (page == nullptr)
 			{
-				std::cout << "page == nullptr. link: " << link << std::endl;
+				std::cout << "page == nullptr. link: " << link->string_link << std::endl;
 				break;
 			}
 			pages.push_back(page);
 			auto page_Load = [&page, &links_all] { page->LoadPage(links_all); };
 			thread_pool.Enqueue(page_Load);
-
-
-
 
 		}
 

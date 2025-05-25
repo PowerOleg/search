@@ -1,6 +1,6 @@
 #include "webpage.h"
 
-Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_, std::mutex &m_) : ioc{ ioc_ }, url{ url_ }, m{ m_ }
+Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_, std::mutex& m_, int recursion_level_) : ioc{ ioc_ }, url{ url_ }, m{ m_ }, recursion_level{ recursion_level_ }
 {
     //this->url = "https://mail.ru/";
     //boost::asio::io_context ioc_;
@@ -9,7 +9,7 @@ Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_, std::mutex &m_
 
 
 
-void Webpage::LoadPage(std::queue<std::string> &links_all)
+void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
 {
     std::smatch match;
     std::cout << "15regex_match: " << this->url << std::endl;
@@ -18,7 +18,7 @@ void Webpage::LoadPage(std::queue<std::string> &links_all)
 
     if (std::regex_match(this->url, match, regex_pattern))
     {
-        std::queue<std::string> temp_links;
+        std::queue<std::shared_ptr<Link>> temp_links;
         if (match[1].str() == "http")
         {
             temp_links = LoadHttp(match);
@@ -38,7 +38,7 @@ void Webpage::LoadPage(std::queue<std::string> &links_all)
     }
 }
 
-void Webpage::PushQueue(std::queue<std::string> &source, std::queue<std::string> &destination)
+void Webpage::PushQueue(std::queue<std::shared_ptr<Link>> &source, std::queue<std::shared_ptr<Link>> &destination)
 {
     std::scoped_lock lock(this->m);
     while (!source.empty())
@@ -48,20 +48,10 @@ void Webpage::PushQueue(std::queue<std::string> &source, std::queue<std::string>
     }
 }
 
-bool Webpage::IsValid()
-{
-    return is_valid_page;
-}
-
-void Webpage::SetValid()
-{
-    this->is_valid_page = true;
-}
-
-std::queue<std::string> Webpage::LoadHttp(const std::smatch& match)
+std::queue<std::shared_ptr<Link>> Webpage::LoadHttp(const std::smatch& match)
 {
     std::vector<std::string> vLinks;
-    std::queue<std::string> abs_links;
+    std::queue<std::shared_ptr<Link>> abs_links;
     try {
         const std::string target = (match[3].length() == 0 ? "/" : match[3].str());
         int version = 11;
@@ -102,10 +92,10 @@ std::queue<std::string> Webpage::LoadHttp(const std::smatch& match)
     return abs_links;
 }
 
-std::queue<std::string> Webpage::LoadHttps(std::smatch const& match)
+std::queue<std::shared_ptr<Link>> Webpage::LoadHttps(const std::smatch &match)
 {
     std::vector<std::string> vLinks;
-    std::queue<std::string> abs_links;
+    std::queue<std::shared_ptr<Link>> abs_links;
     try {
 
         std::string const host = match[2];
@@ -164,7 +154,7 @@ std::queue<std::string> Webpage::LoadHttps(std::smatch const& match)
     return abs_links;
 }
 
-std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
+std::vector<std::string> Webpage::FindLinks(std::string const sBody)
 {
     std::vector<std::string> vLinks;
 
@@ -238,7 +228,7 @@ std::vector<std::string> Webpage::FindLinks(std::string const& sBody)
 
 
 
-void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<std::string> &abs_links)
+void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<std::shared_ptr<Link>> &abs_links)
 {
     std::smatch mr;
     
@@ -302,7 +292,7 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<st
         std::cout << "288: " << link << std::endl;
         if (std::regex_search(link, regex_pattern))
         {
-            abs_links.push(link);
+            abs_links.push(std::make_shared<Link>(link, this->recursion_level + 1));
         }
 
     }

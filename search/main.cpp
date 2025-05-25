@@ -81,24 +81,24 @@ std::mutex m;
 //}
 
 
-//std::string GetLink(std::queue<std::string> &links_all, std::vector<std::string> &used_links, int &ret_flag)
-//{
-//	ret_flag = 1;
-//	std::string link = links_all.front();
-//	links_all.pop();
-//	std::chrono::milliseconds timespan(50);
-//	std::this_thread::sleep_for(timespan);
-//	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
-//	std::smatch match;
-//	std::cout << "88links_all size: " << links_all.size() << " link: " << link << std::endl;
-//	if (link == "" || !std::regex_match(link, match, regex_pattern))
-//	{
-//		ret_flag = 3; 
-//		return link;
-//	}
-//	used_links.push_back(link);
-//	return link;
-//}
+std::shared_ptr<Link> GetLink(std::queue<std::shared_ptr<Link>> &links_all, int &ret_flag)
+{
+	std::scoped_lock lock(m);
+	ret_flag = 1;
+	std::shared_ptr<Link> link{ links_all.front() };
+	links_all.pop();
+
+	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
+	std::smatch match;
+	std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
+	if (link->string_link == "" || !std::regex_match(link->string_link, match, regex_pattern))
+	{
+		ret_flag = 3; 
+		return link;
+	}
+	//used_links.push_back(link);
+	return link;
+}
 
 void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config, long &word_number)
 {
@@ -111,20 +111,18 @@ void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_pt
 	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
 }
 
-std::shared_ptr<Link> GetLinkFromQueue(std::queue<std::shared_ptr<Link>> &links_all)
-{
-	std::scoped_lock lock(m);
-	std::string link{ links_all.front() };
-	links_all.pop();
-	return link;
-}
+//std::shared_ptr<Link> GetLinkFromQueue(std::queue<std::shared_ptr<Link>> &links_all)
+//{
+//	std::scoped_lock lock(m);
+//	std::shared_ptr<Link> link{ links_all.front() };
+//	links_all.pop();
+//	return link;
+//}
 
 int main(int argc, char** argv)
 {
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
-
-	Link;
 
 	Config config;
 	File_manager file_manager("config.ini");
@@ -139,27 +137,32 @@ int main(int argc, char** argv)
 		&config.http_port);
 	
 	std::queue<std::shared_ptr<Link>> links_all;
-	std::vector<std::string> used_links;//для отработанных ссылок
+	//std::vector<std::string> used_links;//для отработанных ссылок
 	
 	links_all.push(std::make_shared<Link>(config.url, 1));//начальная ссылка
 	std::vector<std::shared_ptr<Webpage>> pages;
-	std::vector<std::shared_ptr<Webpage>> valid_pages;
-	std::atomic_int pages_count = 0;
+	//std::vector<std::shared_ptr<Webpage>> valid_pages;
+	//std::atomic_int pages_count = 0;
 
 	
 	size_t thread_quantity = 2;
 	Thread_pool thread_pool(ioc, thread_quantity);
 	size_t postgres_count = 0;
-	long word_number = 1L;
+	//long word_number = 1L;
 	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
 	
 	while (working)
 	{
-		if (links_all.size() > 0)
+		if (!links_all.empty())
 		{
-			Link link = GetLinkFromQueue(links_all);
-			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link, m);
-			
+			int return_flag;
+			std::shared_ptr<Link> link = GetLink(links_all, return_flag);
+			if (return_flag == 3)
+			{
+				continue;
+			}
+
+			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, m, link->recursion_level);
 			if (page == nullptr)
 			{
 				std::cout << "page == nullptr. link: " << link << std::endl;

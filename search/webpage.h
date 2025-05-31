@@ -21,6 +21,9 @@
 #include <unordered_set>
 #include "gumbo.h"
 #include "link.h"
+#include "postgres_manager.h"
+#include "indexer.h"
+#include "config.h"
 
 
 namespace beast = boost::beast;     // from <boost/beast.hpp>
@@ -37,7 +40,7 @@ public:
 	Webpage(Webpage const&) = delete;
 	Webpage& operator=(Webpage const&) = delete;
 
-	Webpage(boost::asio::io_context &ioc_, const std::string url_, std::mutex &m_, int recursion_level_);
+	Webpage(boost::asio::io_context &ioc_, const std::string url_, std::mutex &m_, int recursion_level_, Config config, Postgres_manager &postgres_manager);
 
 	void LoadPage(std::queue<std::shared_ptr<Link>> &links_all);
 	std::string GetPageText() { return page_text; };
@@ -52,6 +55,7 @@ private:
 	std::vector<std::string> FindLinks(std::string const sBody);
 	void AbsLinks(const std::vector<std::string>& init_links, std::queue<std::shared_ptr<Link>> &abs_links);
 	void PushQueue(std::queue<std::shared_ptr<Link>> &source, std::queue<std::shared_ptr<Link>> &destination);
+	void WriteWordsInDatabase(Postgres_manager& postgres, std::vector<std::shared_ptr<Webpage>>& pages, size_t& postgres_count, Config& config, long& word_number);
 
 private:
 	std::string url;
@@ -69,5 +73,9 @@ private:
 	std::vector<std::string> words;
 	std::mutex &m;
 	int recursion_level = 0;
+
+
+	//Config config;
+	Postgres_manager &postgres;
 };
 

@@ -1,6 +1,7 @@
 #include "webpage.h"
 
-Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_, std::mutex& m_, int recursion_level_) : ioc{ ioc_ }, url{ url_ }, m{ m_ }, recursion_level{ recursion_level_ }
+Webpage::Webpage(boost::asio::io_context &ioc_, std::string url_, std::mutex &m_, int recursion_level_, Config config, Postgres_manager &postgres_manager)
+    : ioc{ ioc_ }, url{ url_ }, m{ m_ }, recursion_level{ recursion_level_ }, postgres { postgres_manager }
 {
     //this->url = "https://mail.ru/";
     //boost::asio::io_context ioc_;
@@ -12,7 +13,7 @@ Webpage::Webpage(boost::asio::io_context& ioc_, std::string url_, std::mutex& m_
 void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
 {
     std::smatch match;
-    std::cout << "15regex_match: " << this->url << std::endl;
+    std::cout << "LoadPage() url: " << this->url << std::endl;
     //std::chrono::milliseconds timespan(100);
     //std::this_thread::sleep_for(timespan);
 
@@ -46,6 +47,17 @@ void Webpage::PushQueue(std::queue<std::shared_ptr<Link>> &source, std::queue<st
         destination.push(std::move(source.front()));
         source.pop();
     }
+}
+
+void Webpage::WriteWordsInDatabase(Postgres_manager& postgres, std::vector<std::shared_ptr<Webpage>>& pages, size_t& postgres_count, Config& config, long& word_number)
+{
+    //std::shared_ptr<Webpage> page1 = pages.at(postgres_count++);
+    //std::string page_text = page1->GetPageText();
+    //Indexer page_indexer(page_text);
+    //std::vector<std::string> words = page_indexer.getWords();
+    //page_indexer.FilterSymbols(words);
+    //std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
+    //postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
 }
 
 std::queue<std::shared_ptr<Link>> Webpage::LoadHttp(const std::smatch& match)
@@ -124,14 +136,13 @@ std::queue<std::shared_ptr<Link>> Webpage::LoadHttps(const std::smatch &match)
         boost::beast::flat_buffer buffer;
         http::response<http::dynamic_body> res;
         http::read(stream, buffer, res);
-        std::cout << "123ProcessingPageSTART: " << url << std::endl;
+        //std::cout << "123ProcessingPageSTART: " << url << std::endl;
         this->page_text = boost::beast::buffers_to_string(res.body().data());
         
         std::vector<std::string> links_temp = FindLinks(page_text);
-        std::cout << "127ProcessingPageSTART: " << url << std::endl;
+        //std::cout << "127ProcessingPageSTART: " << url << std::endl;
         AbsLinks(std::move(links_temp), abs_links);
-        //this->page_links = std::move(abs_links);
-        std::cout << "130ProcessingPageDONE: " << url << " has " << this->page_links.size() << " links" << std::endl;
+        //std::cout << "130ProcessingPageDONE: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         stream.shutdown(ec);
@@ -246,25 +257,25 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<st
     for (int i = 0; i < init_links.size(); ++i)
     {
         std::string link = init_links.at(i);
-        std::cout << "245link : " << link << std::endl;
+        //std::cout << "245link : " << link << std::endl;
         if (link == "" || link.find("/") == -1)
         {
             std::cout << "Wrong link to make absolute: " << link << std::endl;
             continue;
         }
 
-        std::cout << "252: " << link << std::endl;
+        //std::cout << "252: " << link << std::endl;
         if (link.find("//") == 0) // относительно протокола
         {
             std::regex_search(link, mr, std::regex{ "^[^/]+" });
-            std::cout << "256: " << link << std::endl;
+            //std::cout << "256: " << link << std::endl;
             link = hostname + link;//sUri = mr.str() + sUri;
 
         }
         else if (link.find('/') == 0) // относительно имени хоста
         {
             std::regex_search(link, mr, std::regex{ "^[^/]+//[^/]+" });
-            std::cout << "263: " << link << std::endl;
+            //std::cout << "263: " << link << std::endl;
             link = hostname + link;//sUri = mr.str() + sUri;
 
         }
@@ -277,19 +288,19 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<st
                 ind = link.rfind('/', ind - 1);
             }
             link = std::string{ link.begin(), link.begin() + ind + 1 } + std::string{ link.begin() + cnt * 3, link.end() };
-            std::cout << "276: " << link << std::endl;
+            //std::cout << "276: " << link << std::endl;
 
         }
         else if (std::regex_match(link, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(link, std::regex{ "[^/#?]+" })) // относительно дочерней директории или просто имя файла
         {
-            std::cout << "281: " << link << std::endl;
+            //std::cout << "281: " << link << std::endl;
             int ind = link.rfind('/');
             link = std::string{ link.begin(), link.begin() + ind + 1 } + link;
-            std::cout << "284: " << link << std::endl;
-            std::cout << "285" << std::endl;
+            //std::cout << "284: " << link << std::endl;
+            //std::cout << "285" << std::endl;
         }
 
-        std::cout << "288: " << link << std::endl;
+        //std::cout << "AbsLinks(): " << link << std::endl;
         if (std::regex_search(link, regex_pattern))
         {
             abs_links.push(std::make_shared<Link>(link, this->recursion_level + 1));

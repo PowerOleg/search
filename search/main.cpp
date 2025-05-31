@@ -4,35 +4,26 @@
 #include <mutex>
 #include <string>
 #include "webpage.h"
-#include "postgres_manager.h"
-#include "indexer.h"
+//#include "postgres_manager.h"
+//#include "indexer.h"
 #include "file_manager.h"
 #include "thread_pool.h"
 #include "link.h"
+#include "config.h"
 
 #pragma execution_character_set("utf-8")
 
 using namespace crawler;
 
-struct Config
-{
-	std::string sqlhost;//хост, на котором запущена база данных;
-	std::string sqlport;//порт, на котором запущена база данных;
-	std::string dbname;//название базы данных;
-	std::string username;//имя пользователя для подключения к базе данных;
-	std::string password;//пароль пользователя для подключения к базе данных;
-	std::string url;//стартовая страница для программы «Паук»;
-	std::string crawler_depth;//глубина рекурсии для программы «Паук»;
-	std::string http_port;//порт для запуска программы - поисковика.
-};
 
-void PrintConsole(std::vector<std::string> vector)
-{
-	for (const auto& value : vector)
-	{
-		std::cout << value << std::endl;
-	}
-}
+
+//void PrintConsole(std::vector<std::string> vector)
+//{
+//	for (const auto& value : vector)
+//	{
+//		std::cout << value << std::endl;
+//	}
+//}
 
 
 boost::asio::io_context ioc;
@@ -90,7 +81,7 @@ std::shared_ptr<Link> GetLink(std::queue<std::shared_ptr<Link>> &links_all, int 
 
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::smatch match;
-	std::cout << "links_all size: " << links_all.size() << " link: " << link << std::endl;
+	std::cout << "links_all size: " << links_all.size() << " link: " << link->string_link << std::endl;
 	if (link->string_link == "" || !std::regex_match(link->string_link, match, regex_pattern))
 	{
 		ret_flag = 3; 
@@ -100,23 +91,15 @@ std::shared_ptr<Link> GetLink(std::queue<std::shared_ptr<Link>> &links_all, int 
 	return link;
 }
 
-void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config, long &word_number)
-{
-	std::shared_ptr<Webpage> page1 = pages.at(postgres_count++);
-	std::string page_text = page1->GetPageText();
-	Indexer page_indexer(page_text);
-	std::vector<std::string> words = page_indexer.getWords();
-	page_indexer.FilterSymbols(words);
-	std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
-	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
-}
-
-//std::shared_ptr<Link> GetLinkFromQueue(std::queue<std::shared_ptr<Link>> &links_all)
+//void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config, long &word_number)
 //{
-//	std::scoped_lock lock(m);
-//	std::shared_ptr<Link> link{ links_all.front() };
-//	links_all.pop();
-//	return link;
+//	std::shared_ptr<Webpage> page1 = pages.at(postgres_count++);
+//	std::string page_text = page1->GetPageText();
+//	Indexer page_indexer(page_text);
+//	std::vector<std::string> words = page_indexer.getWords();
+//	page_indexer.FilterSymbols(words);
+//	std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
+//	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
 //}
 
 int main(int argc, char** argv)
@@ -139,7 +122,7 @@ int main(int argc, char** argv)
 	std::queue<std::shared_ptr<Link>> links_all;
 	links_all.push(std::make_shared<Link>(config.url, 1));//начальная ссылка
 
-	std::vector<std::shared_ptr<Webpage>> pages;
+	//std::vector<std::shared_ptr<Webpage>> pages;
 	size_t thread_quantity = 2;
 	Thread_pool thread_pool(ioc, thread_quantity);
 	size_t postgres_count = 0;
@@ -157,17 +140,12 @@ int main(int argc, char** argv)
 				continue;
 			}
 
-			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, m, link->recursion_level);
-			if (page == nullptr)
-			{
-				std::cout << "page == nullptr. link: " << link->string_link << std::endl;
-				break;
-			}
-			pages.push_back(page);
-			auto page_Load = [&page, &links_all] { page->LoadPage(links_all); };
+			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, m, link->recursion_level, config, postgres);
+			auto page_Load = [page, &links_all] { page->LoadPage(links_all); };
 			thread_pool.Enqueue(page_Load);
-
 		}
+		else
+		{/*std::cout << "links_all is empty!" << std::endl;*/}
 
 	}
 

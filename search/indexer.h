@@ -18,7 +18,7 @@ class Indexer
 {
 public:
 	Indexer(const std::string &page_body);
-	std::vector<std::string> getWords() { return this->words; }
+	std::vector<std::string> GetWords() { return this->words; }
 	std::map<std::string, int> Count(const std::vector<std::string> &words);
 	void FilterSymbols(std::vector<std::string>& words);
 

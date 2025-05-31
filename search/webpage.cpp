@@ -1,14 +1,8 @@
 #include "webpage.h"
 
-Webpage::Webpage(boost::asio::io_context &ioc_, std::string url_, std::mutex &m_, int recursion_level_, Config config, Postgres_manager &postgres_manager)
-    : ioc{ ioc_ }, url{ url_ }, m{ m_ }, recursion_level{ recursion_level_ }, postgres { postgres_manager }
-{
-    //this->url = "https://mail.ru/";
-    //boost::asio::io_context ioc_;
-    //this->ioc = &ioc_;
-}
-
-
+Webpage::Webpage(boost::asio::io_context &ioc_, std::string url_, std::mutex &links_all_mutex_, int recursion_level_, Postgres_manager &postgres_manager)
+    : ioc{ ioc_ }, url{ url_ }, links_all_mutex{ links_all_mutex_ }, recursion_level{ recursion_level_ }, postgres{ postgres_manager }
+{}
 
 void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
 {
@@ -19,16 +13,17 @@ void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
 
     if (std::regex_match(this->url, match, regex_pattern))
     {
-        std::queue<std::shared_ptr<Link>> temp_links;
+        std::queue<std::shared_ptr<Link>> links_from_page;
         if (match[1].str() == "http")
         {
-            temp_links = LoadHttp(match);
+            links_from_page = LoadHttp(match);
         }
         else
         {
-            temp_links = LoadHttps(match);
+            links_from_page = LoadHttps(match);
         }
-        PushQueue(temp_links, links_all);
+        PushQueue(links_from_page, links_all);
+        WriteWordsInDatabase();
     }
     else
     {
@@ -41,7 +36,7 @@ void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
 
 void Webpage::PushQueue(std::queue<std::shared_ptr<Link>> &source, std::queue<std::shared_ptr<Link>> &destination)
 {
-    std::scoped_lock lock(this->m);
+    std::scoped_lock lock(this->links_all_mutex);
     while (!source.empty())
     {
         destination.push(std::move(source.front()));
@@ -49,15 +44,19 @@ void Webpage::PushQueue(std::queue<std::shared_ptr<Link>> &source, std::queue<st
     }
 }
 
-void Webpage::WriteWordsInDatabase(Postgres_manager& postgres, std::vector<std::shared_ptr<Webpage>>& pages, size_t& postgres_count, Config& config, long& word_number)
+void Webpage::WriteWordsInDatabase()
 {
-    //std::shared_ptr<Webpage> page1 = pages.at(postgres_count++);
-    //std::string page_text = page1->GetPageText();
-    //Indexer page_indexer(page_text);
-    //std::vector<std::string> words = page_indexer.getWords();
-    //page_indexer.FilterSymbols(words);
-    //std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
-    //postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
+    Indexer page_indexer(this->page_text);
+    std::vector<std::string> words = page_indexer.GetWords();
+    if (words.empty())
+    {
+        std::cout << "no words in url: " << this->url << std::endl;
+        return;
+    }
+    page_indexer.FilterSymbols(words);
+    std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
+    std::cout << "WriteWordsInDatabase() url: " << this->url << std::endl;
+    postgres.Write(this->url, counted_words);
 }
 
 std::queue<std::shared_ptr<Link>> Webpage::LoadHttp(const std::smatch& match)
@@ -85,8 +84,6 @@ std::queue<std::shared_ptr<Link>> Webpage::LoadHttp(const std::smatch& match)
         
         std::vector<std::string> links = FindLinks(page_text);
         AbsLinks(links, abs_links);
-        //this->page_links = std::move(abs_links);
-        std::cout << "74ProcessingPage: " << url << " has " << this->page_links.size() << " links" << std::endl;
 
         boost::system::error_code ec;
         socket.shutdown(tcp::socket::shutdown_both, ec);
@@ -142,7 +139,7 @@ std::queue<std::shared_ptr<Link>> Webpage::LoadHttps(const std::smatch &match)
         std::vector<std::string> links_temp = FindLinks(page_text);
         //std::cout << "127ProcessingPageSTART: " << url << std::endl;
         AbsLinks(std::move(links_temp), abs_links);
-        //std::cout << "130ProcessingPageDONE: " << url << " has " << this->page_links.size() << " links" << std::endl;
+
 
         boost::system::error_code ec;
         stream.shutdown(ec);

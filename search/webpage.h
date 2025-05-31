@@ -23,7 +23,6 @@
 #include "link.h"
 #include "postgres_manager.h"
 #include "indexer.h"
-#include "config.h"
 
 
 namespace beast = boost::beast;     // from <boost/beast.hpp>
@@ -40,13 +39,13 @@ public:
 	Webpage(Webpage const&) = delete;
 	Webpage& operator=(Webpage const&) = delete;
 
-	Webpage(boost::asio::io_context &ioc_, const std::string url_, std::mutex &m_, int recursion_level_, Config config, Postgres_manager &postgres_manager);
+	Webpage(boost::asio::io_context &ioc_, const std::string url_, std::mutex &links_all_mutex_, int recursion_level_, Postgres_manager &postgres_manager);
 
 	void LoadPage(std::queue<std::shared_ptr<Link>> &links_all);
 	std::string GetPageText() { return page_text; };
 	std::vector<std::string> GetLinks() { return page_links; };
-	void MoveWords(std::vector<std::string>&& words_) { this->words = std::move(words_); };
-	std::vector<std::string> GetWords() { return words; };
+	//void MoveWords(std::vector<std::string>&& words_) { this->words = std::move(words_); };
+	//std::vector<std::string> GetWords() { return words; };
 	std::string GetPageUrl() { return url; };
 
 private:
@@ -55,12 +54,11 @@ private:
 	std::vector<std::string> FindLinks(std::string const sBody);
 	void AbsLinks(const std::vector<std::string>& init_links, std::queue<std::shared_ptr<Link>> &abs_links);
 	void PushQueue(std::queue<std::shared_ptr<Link>> &source, std::queue<std::shared_ptr<Link>> &destination);
-	void WriteWordsInDatabase(Postgres_manager& postgres, std::vector<std::shared_ptr<Webpage>>& pages, size_t& postgres_count, Config& config, long& word_number);
+	void WriteWordsInDatabase();
 
 private:
 	std::string url;
 	std::string host;
-    //const std::string target;
 	const std::string port = "80";
 	const int version = 11;
 
@@ -70,12 +68,10 @@ private:
 
 	std::string page_text;
 	std::vector<std::string> page_links;
-	std::vector<std::string> words;
-	std::mutex &m;
+	//std::vector<std::string> words;
+	std::mutex &links_all_mutex;
 	int recursion_level = 0;
 
-
-	//Config config;
 	Postgres_manager &postgres;
 };
 

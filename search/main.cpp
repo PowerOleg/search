@@ -4,8 +4,7 @@
 #include <mutex>
 #include <string>
 #include "webpage.h"
-//#include "postgres_manager.h"
-//#include "indexer.h"
+#include "postgres_manager.h"
 #include "file_manager.h"
 #include "thread_pool.h"
 #include "link.h"
@@ -15,92 +14,29 @@
 
 using namespace crawler;
 
-
-
-//void PrintConsole(std::vector<std::string> vector)
-//{
-//	for (const auto& value : vector)
-//	{
-//		std::cout << value << std::endl;
-//	}
-//}
-
-
 boost::asio::io_context ioc;
 bool working = true;
 int recursion_count = 0;//отражает текущее значение рекурксии
 int number_to_update_recursion = 1;
-std::mutex m;
-
-
-//void UpdateRecursionLevel(const std::vector<std::string> &used_links, const std::vector<std::shared_ptr<Webpage>> &pages)
-//{
-//	if (used_links.size() >= number_to_update_recursion && pages.size() > 1)
-//	{
-//		int links_counter = 0;
-//		for (size_t i = 0; i < pages.size(); i++)
-//		{
-//			links_counter += pages.at(i)->GetLinks().size();
-//		}
-//		number_to_update_recursion = links_counter;
-//		recursion_count++;
-//	}
-//}
-
-//bool UpdateLinks(std::queue<std::string> &links_all, std::vector<std::shared_ptr<Webpage>> &pages, std::atomic_int &pages_count, std::vector<std::shared_ptr<Webpage>> &valid_pages)
-//{
-//	if (links_all.empty())
-//	{
-//		std::vector<std::string> links = pages.at(pages_count)->GetLinks();
-//		if (pages_count + 1 < pages.size() && links.size() == 0)
-//		{
-//			pages_count++;//this condition means it's bad page so just go to next page
-//		}
-//		if (links.size() > 0)
-//		{
-//			valid_pages.push_back(pages.at(pages_count));
-//			for (size_t i = 0; i < links.size(); i++)
-//			{
-//				links_all.push(links.at(i));//std::move(links.at(i)));
-//			}
-//			pages_count++;
-//			return true;
-//		}
-//			return false;
-//	}
-//	return true;
-//}
-
+std::mutex links_all_mutex;
 
 std::shared_ptr<Link> GetLink(std::queue<std::shared_ptr<Link>> &links_all, int &ret_flag)
 {
-	std::scoped_lock lock(m);
+	std::scoped_lock lock(links_all_mutex);
 	ret_flag = 1;
 	std::shared_ptr<Link> link{ links_all.front() };
 	links_all.pop();
 
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::smatch match;
-	std::cout << "links_all size: " << links_all.size() << " link: " << link->string_link << std::endl;
+	//std::cout << "links_all size: " << links_all.size() << " link: " << link->string_link << std::endl;
 	if (link->string_link == "" || !std::regex_match(link->string_link, match, regex_pattern))
 	{
 		ret_flag = 3; 
 		return link;
 	}
-	//used_links.push_back(link);
 	return link;
 }
-
-//void WriteWordsInDatabase(Postgres_manager &postgres, std::vector<std::shared_ptr<Webpage>> &pages, size_t &postgres_count, Config &config, long &word_number)
-//{
-//	std::shared_ptr<Webpage> page1 = pages.at(postgres_count++);
-//	std::string page_text = page1->GetPageText();
-//	Indexer page_indexer(page_text);
-//	std::vector<std::string> words = page_indexer.getWords();
-//	page_indexer.FilterSymbols(words);
-//	std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
-//	postgres.Write(page1->GetPageUrl(), postgres_count, counted_words, word_number);
-//}
 
 int main(int argc, char** argv)
 {
@@ -122,11 +58,9 @@ int main(int argc, char** argv)
 	std::queue<std::shared_ptr<Link>> links_all;
 	links_all.push(std::make_shared<Link>(config.url, 1));//начальная ссылка
 
-	//std::vector<std::shared_ptr<Webpage>> pages;
 	size_t thread_quantity = 2;
 	Thread_pool thread_pool(ioc, thread_quantity);
 	size_t postgres_count = 0;
-	//long word_number = 1L;
 	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
 	
 	while (working)
@@ -140,12 +74,11 @@ int main(int argc, char** argv)
 				continue;
 			}
 
-			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, m, link->recursion_level, config, postgres);
+			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, links_all_mutex, link->recursion_level, postgres);
 			auto page_Load = [page, &links_all] { page->LoadPage(links_all); };
 			thread_pool.Enqueue(page_Load);
 		}
-		else
-		{/*std::cout << "links_all is empty!" << std::endl;*/}
+		else {}//if delete this line the programm doesn't work in proper way
 
 	}
 

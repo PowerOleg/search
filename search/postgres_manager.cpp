@@ -72,8 +72,9 @@ bool Postgres_manager::InitTables()
 	return result;
 }
 
-bool Postgres_manager::Write(const std::string url, size_t postgres_count, const std::map<std::string, int>& new_words, long& word_number)
+bool Postgres_manager::Write(const std::string url, const std::map<std::string, int>& new_words)
 {
+	std::scoped_lock postgres_lock(postgres_mutex);
 	bool result = false;
 	if (url.length() > 255)
 	{
@@ -82,21 +83,23 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 	}
 
 	std::string	document_id = "";
-	//std::map<std::string, std::string> word_and_id;//key=word, value=id
 	std::vector<std::string> all_words;
 	std::vector<std::string> all_words_id;
 	try
 	{
-		if (postgres_count > 1)
+		
+		if (this->last_word_id_last_iteration == "initial")
+		{
+			this->last_word_id_last_iteration = "0";
+		}
+		else
 		{
 			pqxx::work tx0{ connection };
 			this->last_word_id_last_iteration = tx0.query_value<std::string>(
 				"select id from words where id = (select max(id) from words);"
 			);
-			tx0.commit();
+			//tx0.commit();
 		}
-
-
 
 		pqxx::work tx1{ connection };
 		tx1.exec_prepared("prepared_insert_document", url);//prepared statement
@@ -140,7 +143,6 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 
 
 		pqxx::work tx4{ connection };
-		std::cout << "Writing to the database. document_id: " << document_id << std::endl;
 		for (const auto& new_word_and_quantity : new_words)
 		{
 			std::vector<std::string>::iterator vector_it = std::find(all_words.begin(), all_words.end(), new_word_and_quantity.first);
@@ -168,16 +170,5 @@ bool Postgres_manager::Write(const std::string url, size_t postgres_count, const
 		std::cout << e.what() << std::endl << std::endl;
 	}
 
-
-//	//std::string document_id = std::to_string(postgres_count);
-
-//	try
-//	{
-//		
-//}
-//catch (const std::exception& e)
-//{
-//	std::cout << e.what() << std::endl;
-//}
 	return result;
 }

@@ -172,3 +172,13 @@ bool Postgres_manager::Write(const std::string url, const std::map<std::string, 
 
 	return result;
 }
+
+void Postgres_manager::AddLinkInWrittenSet(const std::string link)
+{
+	this->links_written_in_database.insert(link);
+}
+
+bool Postgres_manager::IsLinkDuplicate(const std::string link)//true == duplicate 
+{
+	return this->links_written_in_database.contains(link);
+}

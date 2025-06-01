@@ -1,6 +1,6 @@
 #include "webpage.h"
 
-Webpage::Webpage(boost::asio::io_context &ioc_, std::string url_, std::mutex &links_all_mutex_, int recursion_level_, Postgres_manager &postgres_manager)
+Webpage::Webpage(boost::asio::io_context &ioc_, std::string url_, std::mutex &links_all_mutex_, size_t recursion_level_, Postgres_manager &postgres_manager)
     : ioc{ ioc_ }, url{ url_ }, links_all_mutex{ links_all_mutex_ }, recursion_level{ recursion_level_ }, postgres{ postgres_manager }
 {}
 
@@ -8,8 +8,6 @@ void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
 {
     std::smatch match;
     std::cout << "LoadPage() url: " << this->url << std::endl;
-    //std::chrono::milliseconds timespan(100);
-    //std::this_thread::sleep_for(timespan);
 
     if (std::regex_match(this->url, match, regex_pattern))
     {
@@ -55,8 +53,17 @@ void Webpage::WriteWordsInDatabase()
     }
     page_indexer.FilterSymbols(words);
     std::map<std::string, int> counted_words = page_indexer.Count(words);//std::move(words));
+
+    if (postgres.IsLinkDuplicate(this->url))
+    {
+        return;
+    }
     std::cout << "WriteWordsInDatabase() url: " << this->url << std::endl;
-    postgres.Write(this->url, counted_words);
+    bool is_written = postgres.Write(this->url, counted_words);
+    if (is_written)
+    {
+        postgres.AddLinkInWrittenSet(this->url);
+    }
 }
 
 std::queue<std::shared_ptr<Link>> Webpage::LoadHttp(const std::smatch& match)
@@ -81,7 +88,6 @@ std::queue<std::shared_ptr<Link>> Webpage::LoadHttp(const std::smatch& match)
         http::read(socket, buffer, res);
 
         this->page_text = boost::beast::buffers_to_string(res.body().data());
-        
         std::vector<std::string> links = FindLinks(page_text);
         AbsLinks(links, abs_links);
 
@@ -106,7 +112,6 @@ std::queue<std::shared_ptr<Link>> Webpage::LoadHttps(const std::smatch &match)
     std::vector<std::string> vLinks;
     std::queue<std::shared_ptr<Link>> abs_links;
     try {
-
         std::string const host = match[2];
         std::string const target = (match[3].length() == 0 ? "/" : match[3].str());
         int version = 11;
@@ -133,11 +138,9 @@ std::queue<std::shared_ptr<Link>> Webpage::LoadHttps(const std::smatch &match)
         boost::beast::flat_buffer buffer;
         http::response<http::dynamic_body> res;
         http::read(stream, buffer, res);
-        //std::cout << "123ProcessingPageSTART: " << url << std::endl;
+
         this->page_text = boost::beast::buffers_to_string(res.body().data());
-        
         std::vector<std::string> links_temp = FindLinks(page_text);
-        //std::cout << "127ProcessingPageSTART: " << url << std::endl;
         AbsLinks(std::move(links_temp), abs_links);
 
 
@@ -211,7 +214,6 @@ std::vector<std::string> Webpage::FindLinks(std::string const sBody)
         }
         for (auto& sLnk : vLinks)
         {
-            std::cout << "201sLnk: " << sLnk << " sBase: " << sBase << "\n\n";
             if (std::regex_match(sLnk, std::regex{ "(?:[^/]+/)+[^/]+" }) || std::regex_match(sLnk, std::regex{ "[^/#?]+" })) // относительно дочерней или текущей директории
             {
                 sLnk = sBase + '/' + sLnk;
@@ -233,8 +235,6 @@ std::vector<std::string> Webpage::FindLinks(std::string const sBody)
     gumbo_destroy_output(&kGumboDefaultOptions, output);
     return vLinks;
 }
-
-
 
 void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<std::shared_ptr<Link>> &abs_links)
 {

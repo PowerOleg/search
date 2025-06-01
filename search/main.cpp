@@ -15,6 +15,7 @@
 using namespace crawler;
 
 boost::asio::io_context ioc;
+size_t thread_quantity = 2;
 bool working = true;
 int recursion_count = 0;//отражает текущее значение рекурксии
 int number_to_update_recursion = 1;
@@ -29,7 +30,6 @@ std::shared_ptr<Link> GetLink(std::queue<std::shared_ptr<Link>> &links_all, int 
 
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::smatch match;
-	//std::cout << "links_all size: " << links_all.size() << " link: " << link->string_link << std::endl;
 	if (link->string_link == "" || !std::regex_match(link->string_link, match, regex_pattern))
 	{
 		ret_flag = 3; 
@@ -57,10 +57,7 @@ int main(int argc, char** argv)
 	
 	std::queue<std::shared_ptr<Link>> links_all;
 	links_all.push(std::make_shared<Link>(config.url, 1));//начальная ссылка
-
-	size_t thread_quantity = 2;
 	Thread_pool thread_pool(ioc, thread_quantity);
-	size_t postgres_count = 0;
 	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
 	
 	while (working)
@@ -73,7 +70,11 @@ int main(int argc, char** argv)
 			{
 				continue;
 			}
-
+			if (link->recursion_level > atoi(config.crawler_depth.c_str()))
+			{
+				working = false;
+				break;
+			}
 			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, links_all_mutex, link->recursion_level, postgres);
 			auto page_Load = [page, &links_all] { page->LoadPage(links_all); };
 			thread_pool.Enqueue(page_Load);
@@ -81,38 +82,8 @@ int main(int argc, char** argv)
 		else {}//if delete this line the programm doesn't work in proper way
 
 	}
-
-
-	/*while (working)
-	{
-		if (!UpdateLinks(links_all, pages, pages_count, valid_pages))
-		{
-			continue;
-		}
-
-		int return_flag;
-		std::string link = GetLink(links_all, used_links, return_flag);
-		if (return_flag == 3)
-		{
-			continue;
-		}
-		
-		std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link);
-		pages.push_back(page);
-		auto page_Load = [&page] { page->LoadPage(); };
-		thread_pool.Enqueue(page_Load);
-
-		if (valid_pages.size() > postgres_count)
-		{
-			WriteWordsInDatabase(postgres, valid_pages, postgres_count, config, word_number);
-		}
-
-		UpdateRecursionLevel(used_links, pages);
-		if (recursion_count >= atoi(config.crawler_depth.c_str()))
-		{
-			working = false;
-		}
-	}*/
-
+	
+	std::chrono::milliseconds timespan(30000);
+	std::this_thread::sleep_for(timespan);
 	return 0;
 }

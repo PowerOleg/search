@@ -6,9 +6,9 @@ namespace crawler
 	struct Link
 	{
 		std::string string_link = "";
-		size_t recursion_level = 0;
+		size_t crawler_depth = 0;
 
-		Link(std::string link, size_t recursion_level_) : string_link{ link }, recursion_level{recursion_level_}
+		Link(std::string link, size_t recursion_level_) : string_link{ link }, crawler_depth{recursion_level_}
 		{}
 	};
 }

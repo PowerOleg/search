@@ -1,7 +1,7 @@
 #include "webpage.h"
 
-Webpage::Webpage(boost::asio::io_context &ioc_, std::string url_, std::mutex &links_all_mutex_, size_t recursion_level_, Postgres_manager &postgres_manager)
-    : ioc{ ioc_ }, url{ url_ }, links_all_mutex{ links_all_mutex_ }, recursion_level{ recursion_level_ }, postgres{ postgres_manager }
+Webpage::Webpage(boost::asio::io_context &ioc_, std::string url_, std::mutex &links_all_mutex_, size_t crawler_depth_, Postgres_manager &postgres_manager,const size_t crawler_depth_stop_)
+    : ioc{ ioc_ }, url{ url_ }, links_all_mutex{ links_all_mutex_ }, crawler_depth{ crawler_depth_ }, postgres{ postgres_manager }, crawler_depth_stop{ crawler_depth_stop_ }
 {}
 
 void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
@@ -20,7 +20,10 @@ void Webpage::LoadPage(std::queue<std::shared_ptr<Link>> &links_all)
         {
             links_from_page = LoadHttps(match);
         }
-        PushQueue(links_from_page, links_all);
+        if (crawler_depth < crawler_depth_stop)
+        {
+            PushQueue(links_from_page, links_all);
+        }
         WriteWordsInDatabase();
     }
     else
@@ -300,7 +303,7 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<st
         //std::cout << "AbsLinks(): " << link << std::endl;
         if (std::regex_search(link, regex_pattern))
         {
-            abs_links.push(std::make_shared<Link>(link, this->recursion_level + 1));
+            abs_links.push(std::make_shared<Link>(link, this->crawler_depth + 1));
         }
 
     }

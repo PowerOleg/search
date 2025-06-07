@@ -38,7 +38,7 @@ class Webpage
 public:
 	Webpage(Webpage const&) = delete;
 	Webpage& operator=(Webpage const&) = delete;
-	Webpage(boost::asio::io_context &ioc_, const std::string url_, std::mutex &links_all_mutex_, size_t recursion_level_, Postgres_manager &postgres_manager);
+	Webpage(boost::asio::io_context &ioc_, const std::string url_, std::mutex &links_all_mutex_, size_t recursion_level_, Postgres_manager &postgres_manager, const size_t crawler_depth_stop_);
 
 	void LoadPage(std::queue<std::shared_ptr<Link>> &links_all);
 	std::string GetPageText() { return page_text; };
@@ -55,15 +55,14 @@ private:
 private:
 	std::string url;
 	std::string host;
-	//const std::string port = "80";
-	//const int version = 11;
 	std::regex regex_pattern{ "^(?:(https?)://)([^/]+)(/.*)?" };
 	std::mutex mtx;
 	boost::asio::io_context &ioc;
 
 	std::string page_text;
 	std::mutex &links_all_mutex;
-	size_t recursion_level = 0;
+	size_t crawler_depth = 0;
+	size_t crawler_depth_stop;
 	Postgres_manager &postgres;
 };
 

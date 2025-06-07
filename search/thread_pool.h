@@ -30,6 +30,12 @@ public:
 		boost::asio::post(ioc, task);//https://www.boost.org/doc/libs/master/doc/html/boost_asio/reference/io_context.html
 	}
 
+	void Destroy()
+	{
+		ioc.stop();
+		threads.join_all();
+	}
+
 private:
 	boost::asio::io_context &ioc;
 	boost::thread_group threads;

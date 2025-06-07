@@ -16,9 +16,7 @@ using namespace crawler;
 
 boost::asio::io_context ioc;
 size_t thread_quantity = 2;
-bool working = true;
-int recursion_count = 0;//отражает текущее значение рекурксии
-int number_to_update_recursion = 1;
+std::atomic_int tasks_quantity = 0;
 std::mutex links_all_mutex;
 
 std::shared_ptr<Link> GetLink(std::queue<std::shared_ptr<Link>> &links_all, int &ret_flag)
@@ -57,10 +55,11 @@ int main(int argc, char** argv)
 	
 	std::queue<std::shared_ptr<Link>> links_all;
 	links_all.push(std::make_shared<Link>(config.url, 1));//начальная ссылка
+	size_t crawler_depth_stop = atoi(config.crawler_depth.c_str());
 	Thread_pool thread_pool(ioc, thread_quantity);
 	Postgres_manager postgres(config.sqlhost, config.sqlport, config.dbname, config.username, config.password);
 	
-	while (working)
+	while (links_all.size() > 0 || tasks_quantity > 0)
 	{
 		if (!links_all.empty())
 		{
@@ -70,20 +69,19 @@ int main(int argc, char** argv)
 			{
 				continue;
 			}
-			if (link->recursion_level > atoi(config.crawler_depth.c_str()))
-			{
-				working = false;
-				break;
-			}
-			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, links_all_mutex, link->recursion_level, postgres);
-			auto page_Load = [page, &links_all] { page->LoadPage(links_all); };
+			std::shared_ptr<Webpage> page = std::make_shared<Webpage>(ioc, link->string_link, links_all_mutex, link->crawler_depth, postgres, crawler_depth_stop);
+			auto page_Load = [page, &links_all] { 
+				page->LoadPage(links_all);
+				std::cout << "tasks quantity: " << tasks_quantity - 1 << std::endl;
+				return tasks_quantity--;
+			};
 			thread_pool.Enqueue(page_Load);
+			tasks_quantity++;
 		}
 		else {}//if delete this line the programm doesn't work in proper way
 
 	}
 	
-	std::chrono::milliseconds timespan(30000);
-	std::this_thread::sleep_for(timespan);
+	thread_pool.Destroy();
 	return 0;
 }

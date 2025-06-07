@@ -303,6 +303,11 @@ void Webpage::AbsLinks(const std::vector<std::string> &init_links, std::queue<st
         //std::cout << "AbsLinks(): " << link << std::endl;
         if (std::regex_search(link, regex_pattern))
         {
+            if (link.at(link.length() - 1) == '/')
+            {
+                link = link.substr(0, link.length() - 1);
+                std::cout << link << std::endl;
+            }
             abs_links.push(std::make_shared<Link>(link, this->crawler_depth + 1));
         }
 

@@ -180,5 +180,11 @@ void Postgres_manager::AddLinkInWrittenSet(const std::string link)
 
 bool Postgres_manager::IsLinkDuplicate(const std::string link)//true == duplicate 
 {
-	return this->links_written_in_database.contains(link);
+	std::string linkEdited = link;
+	if (linkEdited.at(linkEdited.length() - 1) == '/')
+	{
+		linkEdited = linkEdited.substr(0, linkEdited.length() - 1);
+		std::cout << linkEdited << std::endl;
+	}
+	return this->links_written_in_database.contains(linkEdited);
 }
